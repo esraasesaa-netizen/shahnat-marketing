@@ -1,0 +1,6 @@
+{
+  "name": "shahnat-marketing-office",
+  "private": true,
+  "version": "1.0.0",
+  "engines": { "node": ">=18" }
+}
