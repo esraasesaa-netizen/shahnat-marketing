@@ -9,6 +9,18 @@
   var ROLE_NAME = { manager: 'مديرة المكتب', ceo: 'المدير التنفيذي', marketer: 'مسوّق' };
 
   var sb = null, profile = null, authResolve;
+  /* password recovery: the email link comes back as  /?reset=1#access_token=...&type=recovery  */
+  var RAW_URL = location.search + '&' + location.hash.replace(/^#/, '');
+  var RECOVERY = /(^|[?&])type=recovery(&|$)/.test(RAW_URL) || /(^|[?&])reset=1(&|$)/.test(RAW_URL);
+  var LINK_ERR = /(^|[?&])error(_code)?=/.test(RAW_URL);
+  var PUBLIC_ORIGIN = 'https://marketing.shahnat.net';
+  /* recovery links always come back to marketing.shahnat.net; on the Vercel test link (or local testing)
+     they come back to the same test address, so the flow can be tried before the DNS is ready */
+  function resetRedirect() {
+    var testHost = /\.vercel\.app$/.test(location.hostname) || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+    return (testHost ? location.origin : PUBLIC_ORIGIN) + '/?reset=1';
+  }
+  function cleanUrl() { history.replaceState(null, '', location.pathname); }
   var authReady = new Promise(function (r) { authResolve = r; });
 
   function uid() {
@@ -34,6 +46,8 @@
     '#gate button{margin-top:22px;width:100%;min-height:50px;border:0;border-radius:4px;background:var(--navy,#17294D);color:#fff;font:700 16px var(--display);cursor:pointer}' +
     '#gate button:disabled{opacity:.6;cursor:wait}' +
     '#gate .msg{margin:14px 0 0;color:var(--bad,#B3261E);font-size:14px;min-height:1em}' +
+    '#gate .msg.ok{color:var(--s-done,#17724B)}' +
+    '#gate button.link{display:block;width:auto;margin-top:10px;min-height:36px;padding:2px 0;background:none;color:var(--accent-text,#B34505);text-decoration:underline;font:700 14px var(--body)}' +
     '.who{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--muted,#56647F);margin-top:6px;flex-wrap:wrap}' +
     '.who b{color:var(--ink,#13213C)}' +
     '.who button{border:0;background:none;color:var(--accent-text,#B34505);font:700 13.5px var(--body);cursor:pointer;padding:4px 0;text-decoration:underline}' +
@@ -45,27 +59,77 @@
 
   var gate = document.createElement('div');
   gate.id = 'gate'; gate.dir = 'rtl'; gate.lang = 'ar';
-  gate.innerHTML =
-    '<form class="door" autocomplete="on">' +
-    '<h1>مكتب تسويق شحنات</h1><p class="sub">ادخل باسم المستخدم وكلمة المرور.</p>' +
-    '<label for="g-user">اسم المستخدم</label><input id="g-user" name="username" autocomplete="username" required dir="ltr">' +
-    '<label for="g-pass">كلمة المرور</label><input id="g-pass" name="password" type="password" autocomplete="current-password" required dir="ltr">' +
-    '<button type="submit">دخول</button><p class="msg" id="g-msg" role="alert"></p></form>';
-  function showGate(msg) {
+  var mode = 'login';
+  var FORMS = {
+    login:
+      '<form class="door" data-mode="login" autocomplete="on">' +
+      '<h1>مكتب تسويق شحنات</h1><p class="sub">ادخل باسم المستخدم وكلمة المرور.</p>' +
+      '<label for="g-user">اسم المستخدم</label><input id="g-user" name="username" autocomplete="username" required dir="ltr">' +
+      '<label for="g-pass">كلمة المرور</label><input id="g-pass" name="password" type="password" autocomplete="current-password" required dir="ltr">' +
+      '<button type="button" class="link" data-go="forgot">نسيت كلمة المرور؟</button>' +
+      '<button type="submit">دخول</button>' +
+      '<p class="msg" id="g-msg" role="alert"></p></form>',
+    forgot:
+      '<form class="door" data-mode="forgot">' +
+      '<h1>استعادة كلمة المرور</h1><p class="sub">اكتب الإيميل المسجّل في المكتب، ويوصلك رابط لتعيين كلمة مرور جديدة.</p>' +
+      '<label for="g-email">الإيميل</label><input id="g-email" type="email" autocomplete="email" required dir="ltr">' +
+      '<button type="submit">أرسل الرابط</button>' +
+      '<button type="button" class="link" data-go="login">رجوع لتسجيل الدخول</button>' +
+      '<p class="msg" id="g-msg" role="alert"></p></form>',
+    reset:
+      '<form class="door" data-mode="reset" novalidate>' +
+      '<h1>كلمة مرور جديدة</h1><p class="sub">اختر كلمة مرور جديدة، ٨ أحرف على الأقل.</p>' +
+      '<label for="g-new">كلمة المرور الجديدة</label><input id="g-new" type="password" autocomplete="new-password" minlength="8" required dir="ltr">' +
+      '<label for="g-new2">تأكيد كلمة المرور</label><input id="g-new2" type="password" autocomplete="new-password" minlength="8" required dir="ltr">' +
+      '<button type="submit">حفظ كلمة المرور</button>' +
+      '<p class="msg" id="g-msg" role="alert"></p></form>'
+  };
+  function setMode(m, msg, ok) {
+    mode = m; gate.innerHTML = FORMS[m];
     if (!gate.parentNode) document.body.appendChild(gate);
-    gate.hidden = false; document.getElementById('g-msg').textContent = msg || '';
+    gate.hidden = false;
+    var el = document.getElementById('g-msg'); el.textContent = msg || ''; el.className = 'msg' + (ok ? ' ok' : '');
+    var first = gate.querySelector('input'); if (first) first.focus();
   }
+  function showGate(msg) { setMode('login', msg); }
+  gate.addEventListener('click', function (e) {
+    var go = e.target.closest && e.target.closest('[data-go]');
+    if (go) { e.preventDefault(); setMode(go.dataset.go); }
+  });
   gate.addEventListener('submit', async function (ev) {
     ev.preventDefault();
-    var btn = gate.querySelector('button'), msg = document.getElementById('g-msg');
-    var u = document.getElementById('g-user').value.trim(), p = document.getElementById('g-pass').value;
-    if (!sb) { msg.textContent = 'الإعدادات لم تكتمل بعد.'; return; }
-    var email = u.indexOf('@') >= 0 ? u : u.toLowerCase() + '@' + LOGIN_DOMAIN;
-    btn.disabled = true; msg.textContent = '';
-    var r = await sb.auth.signInWithPassword({ email: email, password: p });
-    btn.disabled = false;
-    if (r.error) { msg.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة.'; return; }
-    afterLogin(r.data.session);
+    var btn = gate.querySelector('button[type=submit]'), msg = document.getElementById('g-msg');
+    function say(t, ok) { msg.textContent = t; msg.className = 'msg' + (ok ? ' ok' : ''); }
+    if (!sb) { say('الإعدادات لم تكتمل بعد.'); return; }
+    btn.disabled = true; say('');
+    try {
+      if (mode === 'login') {
+        var u = document.getElementById('g-user').value.trim(), p = document.getElementById('g-pass').value;
+        var email = u.indexOf('@') >= 0 ? u : u.toLowerCase() + '@' + LOGIN_DOMAIN;
+        var r = await sb.auth.signInWithPassword({ email: email, password: p });
+        if (r.error) { say('اسم المستخدم أو كلمة المرور غير صحيحة.'); return; }
+        afterLogin(r.data.session);
+      } else if (mode === 'forgot') {
+        var em = document.getElementById('g-email').value.trim();
+        var f = await sb.auth.resetPasswordForEmail(em, { redirectTo: resetRedirect() });
+        if (f.error && /rate|limit|seconds/i.test(f.error.message || '')) { say('طلبت رابط قبل شوي. استنى دقيقة وجرّب مرة ثانية.'); return; }
+        say('إذا الإيميل مسجّل عندنا، رح يوصلك رابط خلال دقائق. افحص البريد غير المرغوب كمان.', true);
+      } else if (mode === 'reset') {
+        var a1 = document.getElementById('g-new').value, a2 = document.getElementById('g-new2').value;
+        if (a1.length < 8) { say('كلمة المرور لازم تكون ٨ أحرف على الأقل.'); return; }
+        if (a1 !== a2) { say('كلمتا المرور غير متطابقتين.'); return; }
+        var up = await sb.auth.updateUser({ password: a1 });
+        if (up.error) {
+          var m = up.error.message || '';
+          say(/different|same/i.test(m) ? 'اختر كلمة مرور مختلفة عن القديمة.' :
+              /session|expired|jwt/i.test(m) ? 'انتهت صلاحية الرابط. اطلب رابط جديد من "نسيت كلمة المرور؟".' : 'تعذر حفظ كلمة المرور. حاول مرة ثانية.');
+          return;
+        }
+        await sb.auth.signOut();
+        cleanUrl();
+        setMode('login', 'تم تغيير كلمة المرور. سجّل دخولك بكلمة المرور الجديدة.', true);
+      }
+    } finally { btn.disabled = false; }
   });
 
   async function afterLogin(session) {
@@ -238,8 +302,28 @@
     try { cfg = await (await fetch('/api/config', { cache: 'no-store' })).json(); } catch (_) {}
     if (document.readyState === 'loading') await new Promise(function (r) { document.addEventListener('DOMContentLoaded', r); });
     if (!cfg.url || !cfg.anon || !window.supabase) { showGate('الإعدادات ناقصة: أضيفي SUPABASE_URL و SUPABASE_ANON_KEY في Vercel.'); return; }
-    sb = window.supabase.createClient(cfg.url, cfg.anon, { auth: { persistSession: true, autoRefreshToken: true } });
+    sb = window.supabase.createClient(cfg.url, cfg.anon, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit' } });
+    var recoveryShown = false;
+    sb.auth.onAuthStateChange(function (event) {
+      if (event === 'PASSWORD_RECOVERY' && !recoveryShown) { recoveryShown = true; setMode('reset'); }
+    });
+    if (LINK_ERR) {
+      cleanUrl();
+      setMode('forgot', 'رابط الاستعادة منتهي أو استُخدم قبل. اطلب رابط جديد.');
+      return;
+    }
+    if (RECOVERY) {
+      var qs = new URLSearchParams(location.search), th = qs.get('token_hash'), code = qs.get('code'), vr = null;
+      if (th) vr = await sb.auth.verifyOtp({ token_hash: th, type: 'recovery' });
+      else if (code) vr = await sb.auth.exchangeCodeForSession(code);
+      if (vr && vr.error) { cleanUrl(); setMode('forgot', 'رابط الاستعادة منتهي أو استُخدم قبل. اطلب رابط جديد.'); return; }
+    }
     var s = (await sb.auth.getSession()).data.session;
+    if (RECOVERY) {
+      if (s) { if (!recoveryShown) { recoveryShown = true; setMode('reset'); } }
+      else if (!recoveryShown) setMode('forgot', 'رابط الاستعادة غير صالح. اطلب رابط جديد.');
+      return;                        // never open the office from a recovery link
+    }
     if (s) afterLogin(s); else showGate('');
   })();
 })();
