@@ -110,10 +110,39 @@
         if (r.error) { say('اسم المستخدم أو كلمة المرور غير صحيحة.'); return; }
         afterLogin(r.data.session);
       } else if (mode === 'forgot') {
-        var em = document.getElementById('g-email').value.trim();
-        var f = await sb.auth.resetPasswordForEmail(em, { redirectTo: resetRedirect() });
-        if (f.error && /rate|limit|seconds/i.test(f.error.message || '')) { say('طلبت رابط قبل شوي. استنى دقيقة وجرّب مرة ثانية.'); return; }
-        say('إذا الإيميل مسجّل عندنا، رح يوصلك رابط خلال دقائق. افحص البريد غير المرغوب كمان.', true);
+  var em = document.getElementById('g-email').value.trim().toLowerCase();
+
+  if (!em) {
+    say('اكتبي بريدك الإلكتروني أولاً.');
+    return;
+  }
+
+  var f = await sb.auth.resetPasswordForEmail(em, {
+    redirectTo: resetRedirect()
+  });
+
+  if (f.error) {
+    console.error('[Password Recovery Error]', {
+      message: f.error.message,
+      status: f.error.status,
+      name: f.error.name
+    });
+
+    var errorMessage = f.error.message || '';
+
+    if (/rate|limit|seconds|too many/i.test(errorMessage)) {
+      say('تم طلب رابط مؤخرًا. انتظري قليلًا ثم حاولي مرة أخرى.');
+      return;
+    }
+
+    say('تعذر إرسال طلب الاستعادة حاليًا. حاولي مرة أخرى لاحقًا.');
+    return;
+  }
+
+  say(
+    'إذا كان البريد مسجّلًا لدينا، سيصلك رابط استعادة كلمة المرور خلال دقائق. افحصي البريد الوارد والرسائل غير المرغوب فيها.',
+    true
+  );
       } else if (mode === 'reset') {
         var a1 = document.getElementById('g-new').value, a2 = document.getElementById('g-new2').value;
         if (a1.length < 8) { say('كلمة المرور لازم تكون ٨ أحرف على الأقل.'); return; }
