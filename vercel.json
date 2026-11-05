@@ -1,4 +1,17 @@
 {
-  "rewrites": [{ "source": "/_blob/:id", "destination": "/api/blob?id=:id" }],
-  "functions": { "api/sample.js": { "maxDuration": 300 } }
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/_blob/:id",
+      "destination": "/api/blob?id=:id"
+    }
+  ],
+  "functions": {
+    "api/sample.js": {
+      "maxDuration": 300
+    }
+  }
 }
