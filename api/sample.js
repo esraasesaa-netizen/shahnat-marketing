@@ -36,7 +36,7 @@ module.exports = async (req, res) => {
 
   let body = req.body || {};
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch (_) { body = {}; } }
-  if (role !== 'manager' && !(role === 'ceo' && body.json)) { res.status(403).json({ code: 'not_granted' }); return; }   // the executive director may only run the weekly meeting
+  if (role !== 'manager' && role !== 'admin' && !(role === 'ceo' && body.json)) { res.status(403).json({ code: 'not_granted' }); return; }   // the executive director may only run the weekly meeting
   const prompt = String(body.prompt || '');
   if (!prompt.trim()) { res.status(400).json({ code: 'empty_completion' }); return; }
   if (prompt.length > 150000) { res.status(413).json({ code: 'prompt_too_large' }); return; }

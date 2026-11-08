@@ -7,7 +7,8 @@
   var MANAGER_ONLY = ['newtask', 'create', 'start', 'stop', 'approve', 'revise', 'reopen', 'deltask', 'rmatt', 'pickfile',
     'dellesson', 'savecompany', 'meetstart', 'meetstop', 'meetadd', 'meetnotes', 'tpl'];
   var CEO_ALLOWED = ['meetstart', 'meetstop', 'meetnotes'];   /* the executive director controls the meeting room only */
-  var ROLE_NAME = { manager: 'مديرة المكتب', ceo: 'المدير التنفيذي', marketer: 'مسوّق' };
+  var ROLE_NAME = { manager: 'مديرة المكتب', ceo: 'المدير التنفيذي', admin: 'الرئيس التنفيذي', marketer: 'مسوّق' };
+  function isFull() { return !!profile && (profile.role === 'manager' || profile.role === 'admin'); }   /* full permissions */
 
   var sb = null, profile = null, authResolve;
   /* password recovery: the email link comes back as  /?reset=1#access_token=...&type=recovery  */
@@ -144,7 +145,7 @@
     profile = r.data;
     gate.hidden = true;
     if (profile.role === 'ceo') document.body.classList.add('ro-ceo');
-    else if (profile.role !== 'manager') document.body.classList.add('ro');
+    else if (!isFull()) document.body.classList.add('ro');
     var top = document.querySelector('.top .brand > div:last-child');
     if (top && !document.getElementById('who')) {
       var w = document.createElement('div'); w.className = 'who'; w.id = 'who';
@@ -166,7 +167,7 @@
 
   /* read-only roles: block every action that changes data */
   document.addEventListener('click', function (e) {
-    if (!profile || profile.role === 'manager') return;
+    if (!profile || isFull()) return;
     var el = e.target.closest && e.target.closest('[data-act]');
     if (el && MANAGER_ONLY.indexOf(el.dataset.act) >= 0 && !(profile.role === 'ceo' && CEO_ALLOWED.indexOf(el.dataset.act) >= 0)) { e.stopImmediatePropagation(); e.preventDefault(); }
   }, true);
@@ -292,9 +293,9 @@
     use: async function (name) {
       await authReady;
       if (name === 'db') { goLive(); return db; }
-      if (name === 'user') return { role: profile.role, canEdit: function () { return profile.role === 'manager'; }, isOwner: function () { return profile.role === 'manager'; } };
+      if (name === 'user') return { role: profile.role, canEdit: function () { return isFull(); }, isOwner: function () { return isFull(); } };
       if (name === 'sample' && profile.role === 'ceo') return sample;   /* the weekly meeting only; the server enforces it */
-      if (profile.role !== 'manager') throw { code: 'not_granted' };
+      if (!isFull()) throw { code: 'not_granted' };
       if (name === 'sample') return sample;
       if (name === 'assets') return assets;
       throw { code: 'unknown_service' };

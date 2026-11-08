@@ -709,7 +709,7 @@ function dueRun(t){
   return new Date(+p[0],+p[1]-1,+p[2],+tm[0],+tm[1])<=new Date();
 }
 function autoRun(){
-  if(!state.mgr||!sample||!state.ready.t)return;
+  if(state.role!=='manager'||!sample||!state.ready.t)return;   /* only the office manager's open page runs scheduled tasks, so two open pages never run the same task twice */
   var c=Object.keys(state.running).length;
   state.tasks.filter(dueRun).forEach(function(t){if(c<2&&!state.running[t.id]){c++;runTask(t.id)}});
 }
