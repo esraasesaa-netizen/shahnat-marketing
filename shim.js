@@ -6,6 +6,7 @@
   var LOGIN_DOMAIN = 'shahnat.team';            // "esraa" -> esraa@shahnat.team
   var MANAGER_ONLY = ['newtask', 'create', 'start', 'stop', 'approve', 'revise', 'reopen', 'deltask', 'rmatt', 'pickfile',
     'dellesson', 'savecompany', 'meetstart', 'meetstop', 'meetadd', 'meetnotes', 'tpl'];
+  var CEO_ALLOWED = ['meetstart', 'meetstop', 'meetnotes'];   /* the executive director controls the meeting room only */
   var ROLE_NAME = { manager: 'مديرة المكتب', ceo: 'المدير التنفيذي', marketer: 'مسوّق' };
 
   var sb = null, profile = null, authResolve;
@@ -53,6 +54,7 @@
     '.who button{border:0;background:none;color:var(--accent-text,#B34505);font:700 13.5px var(--body);cursor:pointer;padding:4px 0;text-decoration:underline}' +
     '.ro-note{margin:0 0 12px;padding:10px 14px;border:1.5px dashed var(--outline,#17294D);border-radius:4px;font-size:14px;color:var(--ink,#13213C)}' +
     MANAGER_ONLY.map(function (a) { return 'body.ro [data-act="' + a + '"]'; }).join(',') + '{display:none!important}' +
+    MANAGER_ONLY.filter(function (a) { return CEO_ALLOWED.indexOf(a) < 0; }).map(function (a) { return 'body.ro-ceo [data-act="' + a + '"]'; }).join(',') + '{display:none!important}' +
     'body.ro #file-in,body.ro .block p.err,body.ro .nudge{display:none!important}' +
     'body.ro textarea{pointer-events:none;background:var(--soft,#E8ECF4)}';
   document.head.appendChild(css);
@@ -63,7 +65,7 @@
   var FORMS = {
     login:
       '<form class="door" data-mode="login" autocomplete="on">' +
-      '<h1>مكتب تسويق شحنات</h1><p class="sub">ادخل باسم المستخدم وكلمة المرور.</p>' +
+      '<img src="/logo.jpg" alt="شحنات" style="display:block;max-width:230px;max-height:90px;margin:0 auto 14px"><h1 style="font-size:21px">المكتب التسويقي لمنصة شحنات</h1><p class="sub">ادخل باسم المستخدم وكلمة المرور.</p>' +
       '<label for="g-user">اسم المستخدم</label><input id="g-user" name="username" autocomplete="username" required dir="ltr">' +
       '<label for="g-pass">كلمة المرور</label><input id="g-pass" name="password" type="password" autocomplete="current-password" required dir="ltr">' +
       '<button type="button" class="link" data-go="forgot">نسيت كلمة المرور؟</button>' +
@@ -110,39 +112,10 @@
         if (r.error) { say('اسم المستخدم أو كلمة المرور غير صحيحة.'); return; }
         afterLogin(r.data.session);
       } else if (mode === 'forgot') {
-  var em = document.getElementById('g-email').value.trim().toLowerCase();
-
-  if (!em) {
-    say('اكتبي بريدك الإلكتروني أولاً.');
-    return;
-  }
-
-  var f = await sb.auth.resetPasswordForEmail(em, {
-    redirectTo: resetRedirect()
-  });
-
-  if (f.error) {
-    console.error('[Password Recovery Error]', {
-      message: f.error.message,
-      status: f.error.status,
-      name: f.error.name
-    });
-
-    var errorMessage = f.error.message || '';
-
-    if (/rate|limit|seconds|too many/i.test(errorMessage)) {
-      say('تم طلب رابط مؤخرًا. انتظري قليلًا ثم حاولي مرة أخرى.');
-      return;
-    }
-
-    say('تعذر إرسال طلب الاستعادة حاليًا. حاولي مرة أخرى لاحقًا.');
-    return;
-  }
-
-  say(
-    'إذا كان البريد مسجّلًا لدينا، سيصلك رابط استعادة كلمة المرور خلال دقائق. افحصي البريد الوارد والرسائل غير المرغوب فيها.',
-    true
-  );
+        var em = document.getElementById('g-email').value.trim();
+        var f = await sb.auth.resetPasswordForEmail(em, { redirectTo: resetRedirect() });
+        if (f.error && /rate|limit|seconds/i.test(f.error.message || '')) { say('طلبت رابط قبل شوي. استنى دقيقة وجرّب مرة ثانية.'); return; }
+        say('إذا الإيميل مسجّل عندنا، رح يوصلك رابط خلال دقائق. افحص البريد غير المرغوب كمان.', true);
       } else if (mode === 'reset') {
         var a1 = document.getElementById('g-new').value, a2 = document.getElementById('g-new2').value;
         if (a1.length < 8) { say('كلمة المرور لازم تكون ٨ أحرف على الأقل.'); return; }
@@ -170,8 +143,9 @@
     }
     profile = r.data;
     gate.hidden = true;
-    if (profile.role !== 'manager') document.body.classList.add('ro');
-    var top = document.querySelector('.top > div');
+    if (profile.role === 'ceo') document.body.classList.add('ro-ceo');
+    else if (profile.role !== 'manager') document.body.classList.add('ro');
+    var top = document.querySelector('.top .brand > div:last-child');
     if (top && !document.getElementById('who')) {
       var w = document.createElement('div'); w.className = 'who'; w.id = 'who';
       w.innerHTML = '<span><b>' + esc(profile.name || session.user.email) + '</b>، ' + esc(ROLE_NAME[profile.role] || '') + '</span>' +
@@ -179,7 +153,7 @@
       top.appendChild(w);
       document.getElementById('logout').onclick = async function () { await sb.auth.signOut(); location.reload(); };
     }
-    if (profile.role !== 'manager') {
+    if (profile.role === 'marketer') {
       var view = document.getElementById('view');
       if (view && !document.getElementById('ro-note')) {
         var n = document.createElement('p'); n.className = 'ro-note'; n.id = 'ro-note';
@@ -194,7 +168,7 @@
   document.addEventListener('click', function (e) {
     if (!profile || profile.role === 'manager') return;
     var el = e.target.closest && e.target.closest('[data-act]');
-    if (el && MANAGER_ONLY.indexOf(el.dataset.act) >= 0) { e.stopImmediatePropagation(); e.preventDefault(); }
+    if (el && MANAGER_ONLY.indexOf(el.dataset.act) >= 0 && !(profile.role === 'ceo' && CEO_ALLOWED.indexOf(el.dataset.act) >= 0)) { e.stopImmediatePropagation(); e.preventDefault(); }
   }, true);
 
   /* ---------------- db (Firestore-like API on one Supabase table) ---------------- */
@@ -318,6 +292,8 @@
     use: async function (name) {
       await authReady;
       if (name === 'db') { goLive(); return db; }
+      if (name === 'user') return { role: profile.role, canEdit: function () { return profile.role === 'manager'; }, isOwner: function () { return profile.role === 'manager'; } };
+      if (name === 'sample' && profile.role === 'ceo') return sample;   /* the weekly meeting only; the server enforces it */
       if (profile.role !== 'manager') throw { code: 'not_granted' };
       if (name === 'sample') return sample;
       if (name === 'assets') return assets;

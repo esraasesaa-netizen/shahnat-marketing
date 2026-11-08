@@ -1,6 +1,6 @@
 // Runs the AI employees. The Anthropic key stays on the server; only the office manager can run tasks.
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5';
-const SB = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
+const SB = (process.env.SUPABASE_URL || '').trim().replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
 
 async function roleOf(token) {
   const h = { apikey: process.env.SUPABASE_ANON_KEY || '', Authorization: 'Bearer ' + token };
@@ -32,11 +32,11 @@ module.exports = async (req, res) => {
   if (!token || !SB) { res.status(401).json({ code: 'session_expired' }); return; }
   const role = await roleOf(token).catch(() => null);
   if (!role) { res.status(401).json({ code: 'session_expired' }); return; }
-  if (role !== 'manager') { res.status(403).json({ code: 'not_granted' }); return; }
   if (!process.env.ANTHROPIC_API_KEY) { res.status(500).json({ code: 'sampling_disabled' }); return; }
 
   let body = req.body || {};
   if (typeof body === 'string') { try { body = JSON.parse(body); } catch (_) { body = {}; } }
+  if (role !== 'manager' && !(role === 'ceo' && body.json)) { res.status(403).json({ code: 'not_granted' }); return; }   // the executive director may only run the weekly meeting
   const prompt = String(body.prompt || '');
   if (!prompt.trim()) { res.status(400).json({ code: 'empty_completion' }); return; }
   if (prompt.length > 150000) { res.status(413).json({ code: 'prompt_too_large' }); return; }
