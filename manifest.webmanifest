@@ -1,0 +1,14 @@
+{
+  "name": "المكتب التسويقي | شحنات",
+  "short_name": "مكتب شحنات",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F2F4F9",
+  "theme_color": "#243A4B",
+  "icons": [
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

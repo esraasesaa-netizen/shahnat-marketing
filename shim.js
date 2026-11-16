@@ -1,6 +1,5 @@
-/* Shahnat marketing office — replaces Claude's built-in services (db / sample / assets)
-   with Supabase (data, login, files) and a small server function (/api/sample) that calls the Anthropic API.
-   The original office code runs unchanged on top of this file. */
+/* Shahnat marketing office: data, login and files through Supabase,
+   and a small server function (/api/sample) for the team's work. */
 (function () {
   'use strict';
   var LOGIN_DOMAIN = 'shahnat.team';            // "esraa" -> esraa@shahnat.team
@@ -37,9 +36,7 @@
   css.textContent =
     '#gate{position:fixed;inset:0;z-index:999;background:var(--bg,#F2F4F9);display:grid;place-items:center;padding:24px;font-family:var(--body)}' +
     '#gate[hidden]{display:none}' +
-    '#gate .door{position:relative;width:min(400px,100%);background:#fff;border:2px solid var(--outline,#17294D);border-radius:3px;padding:30px 24px 34px}' +
-    '#gate .door::after{content:"";position:absolute;bottom:-2px;left:50%;width:64px;height:6px;margin-left:-32px;background:var(--bg,#F2F4F9)}' +
-    '#gate .door::before{content:"";position:absolute;bottom:2px;left:50%;margin-left:32px;width:2px;height:26px;background:var(--accent,#C24C06);transform-origin:bottom;transform:rotate(-28deg)}' +
+    '#gate .door{position:relative;width:min(400px,100%);background:#fff;border:1px solid var(--line,#D8DEEA);border-top:4px solid var(--bright,#F85F22);border-radius:10px;padding:30px 24px 30px;box-shadow:0 10px 30px rgba(19,33,60,.08)}' +
     '#gate h1{font:700 26px/1.25 var(--display);margin:0 0 4px;color:var(--ink,#13213C)}' +
     '#gate p.sub{margin:0 0 22px;color:var(--muted,#56647F);font-size:14.5px}' +
     '#gate label{display:block;font-weight:700;font-size:14px;margin:14px 0 6px}' +
@@ -66,7 +63,7 @@
   var FORMS = {
     login:
       '<form class="door" data-mode="login" autocomplete="on">' +
-      '<img src="/logo.jpg" alt="شحنات" style="display:block;max-width:230px;max-height:90px;margin:0 auto 14px"><h1 style="font-size:21px">المكتب التسويقي لمنصة شحنات</h1><p class="sub">ادخل باسم المستخدم وكلمة المرور.</p>' +
+      '<img src="/logo.jpg" alt="شحنات" style="display:block;max-width:230px;max-height:90px;margin:0 auto 14px"><h1 style="font-size:21px;text-align:center">المكتب التسويقي لمنصة شحنات</h1><p class="sub" style="text-align:center">حيّاك الله، الدخول باسم المستخدم وكلمة المرور.</p>' +
       '<label for="g-user">اسم المستخدم</label><input id="g-user" name="username" autocomplete="username" required dir="ltr">' +
       '<label for="g-pass">كلمة المرور</label><input id="g-pass" name="password" type="password" autocomplete="current-password" required dir="ltr">' +
       '<button type="button" class="link" data-go="forgot">نسيت كلمة المرور؟</button>' +
@@ -74,14 +71,14 @@
       '<p class="msg" id="g-msg" role="alert"></p></form>',
     forgot:
       '<form class="door" data-mode="forgot">' +
-      '<h1>استعادة كلمة المرور</h1><p class="sub">اكتب الإيميل المسجّل في المكتب، ويوصلك رابط لتعيين كلمة مرور جديدة.</p>' +
+      '<h1>استعادة كلمة المرور</h1><p class="sub">الإيميل المسجّل في المكتب، وبيوصل عليه رابط لتعيين كلمة مرور جديدة.</p>' +
       '<label for="g-email">الإيميل</label><input id="g-email" type="email" autocomplete="email" required dir="ltr">' +
       '<button type="submit">أرسل الرابط</button>' +
       '<button type="button" class="link" data-go="login">رجوع لتسجيل الدخول</button>' +
       '<p class="msg" id="g-msg" role="alert"></p></form>',
     reset:
       '<form class="door" data-mode="reset" novalidate>' +
-      '<h1>كلمة مرور جديدة</h1><p class="sub">اختر كلمة مرور جديدة، ٨ أحرف على الأقل.</p>' +
+      '<h1>كلمة مرور جديدة</h1><p class="sub">كلمة مرور جديدة من 8 أحرف على الأقل.</p>' +
       '<label for="g-new">كلمة المرور الجديدة</label><input id="g-new" type="password" autocomplete="new-password" minlength="8" required dir="ltr">' +
       '<label for="g-new2">تأكيد كلمة المرور</label><input id="g-new2" type="password" autocomplete="new-password" minlength="8" required dir="ltr">' +
       '<button type="submit">حفظ كلمة المرور</button>' +
@@ -95,6 +92,16 @@
     var first = gate.querySelector('input'); if (first) first.focus();
   }
   function showGate(msg) { setMode('login', msg); }
+  function lockMsg(until) {
+    var mins = Math.max(1, Math.ceil((new Date(until) - Date.now()) / 60000));
+    return 'الدخول مقفل مؤقتاً بعد 3 محاولات خاطئة. المحاولة متاحة بعد ' + mins + ' دقيقة، أو عن طريق «نسيت كلمة المرور؟».';
+  }
+  /* attachments are private: /_blob/<id> needs the signed-in user's token, kept in a cookie limited to that path */
+  function blobCookie(session) {
+    var secure = location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie = session ? 'ob_t=' + session.access_token + '; Path=/_blob; Max-Age=3600; SameSite=Strict' + secure
+                              : 'ob_t=; Path=/_blob; Max-Age=0; SameSite=Strict' + secure;
+  }
   gate.addEventListener('click', function (e) {
     var go = e.target.closest && e.target.closest('[data-go]');
     if (go) { e.preventDefault(); setMode(go.dataset.go); }
@@ -109,28 +116,36 @@
       if (mode === 'login') {
         var u = document.getElementById('g-user').value.trim(), p = document.getElementById('g-pass').value;
         var email = u.indexOf('@') >= 0 ? u : u.toLowerCase() + '@' + LOGIN_DOMAIN;
+        var lock = await sb.rpc('login_status', { p_email: email });
+        if (lock.data) { say(lockMsg(lock.data)); return; }
         var r = await sb.auth.signInWithPassword({ email: email, password: p });
-        if (r.error) { say('اسم المستخدم أو كلمة المرور غير صحيحة.'); return; }
+        if (r.error) {
+          if (/rate|too many/i.test(r.error.message || '')) { say('محاولات كثيرة. الدخول متاح بعد دقائق.'); return; }
+          var f = await sb.rpc('login_failed', { p_email: email });
+          say(f.data ? lockMsg(f.data) : 'اسم المستخدم أو كلمة المرور غير صحيحة.');
+          return;
+        }
+        sb.rpc('login_ok').then(function () {}, function () {});
         afterLogin(r.data.session);
       } else if (mode === 'forgot') {
         var em = document.getElementById('g-email').value.trim();
         var f = await sb.auth.resetPasswordForEmail(em, { redirectTo: resetRedirect() });
-        if (f.error && /rate|limit|seconds/i.test(f.error.message || '')) { say('طلبت رابط قبل شوي. استنى دقيقة وجرّب مرة ثانية.'); return; }
-        say('إذا الإيميل مسجّل عندنا، رح يوصلك رابط خلال دقائق. افحص البريد غير المرغوب كمان.', true);
+        if (f.error && /rate|limit|seconds/i.test(f.error.message || '')) { say('انرسل رابط قبل قليل. الطلب الجديد يكون متاح بعد دقيقة.'); return; }
+        say('إذا كان الإيميل مسجّل عندنا، بيوصل رابط الاستعادة خلال دقائق. يفضّل التأكد من مجلد الرسائل غير المرغوبة.', true);
       } else if (mode === 'reset') {
         var a1 = document.getElementById('g-new').value, a2 = document.getElementById('g-new2').value;
-        if (a1.length < 8) { say('كلمة المرور لازم تكون ٨ أحرف على الأقل.'); return; }
+        if (a1.length < 8) { say('كلمة المرور لازم تكون 8 أحرف على الأقل.'); return; }
         if (a1 !== a2) { say('كلمتا المرور غير متطابقتين.'); return; }
         var up = await sb.auth.updateUser({ password: a1 });
         if (up.error) {
           var m = up.error.message || '';
-          say(/different|same/i.test(m) ? 'اختر كلمة مرور مختلفة عن القديمة.' :
-              /session|expired|jwt/i.test(m) ? 'انتهت صلاحية الرابط. اطلب رابط جديد من "نسيت كلمة المرور؟".' : 'تعذر حفظ كلمة المرور. حاول مرة ثانية.');
+          say(/different|same/i.test(m) ? 'كلمة المرور الجديدة لازم تختلف عن القديمة.' :
+              /session|expired|jwt/i.test(m) ? 'انتهت صلاحية الرابط. يلزم طلب رابط جديد من «نسيت كلمة المرور؟».' : 'تعذر حفظ كلمة المرور، والمحاولة مرة ثانية ممكنة.');
           return;
         }
         await sb.auth.signOut();
         cleanUrl();
-        setMode('login', 'تم تغيير كلمة المرور. سجّل دخولك بكلمة المرور الجديدة.', true);
+        setMode('login', 'تم تغيير كلمة المرور. الدخول الآن بكلمة المرور الجديدة.', true);
       }
     } finally { btn.disabled = false; }
   });
@@ -139,10 +154,11 @@
     var r = await sb.from('profiles').select('role,name').eq('id', session.user.id).maybeSingle();
     if (r.error || !r.data) {
       await sb.auth.signOut();
-      showGate('هذا الحساب غير مضاف للمكتب. اطلب من مديرة المكتب إضافته.');
+      showGate('هذا الحساب غير مضاف للمكتب، والإضافة تكون عن طريق مديرة المكتب.');
       return;
     }
     profile = r.data;
+    blobCookie(session);
     gate.hidden = true;
     if (profile.role === 'ceo') document.body.classList.add('ro-ceo');
     else if (!isFull()) document.body.classList.add('ro');
@@ -152,13 +168,13 @@
       w.innerHTML = '<span><b>' + esc(profile.name || session.user.email) + '</b>، ' + esc(ROLE_NAME[profile.role] || '') + '</span>' +
         '<button type="button" id="logout">خروج</button>';
       top.appendChild(w);
-      document.getElementById('logout').onclick = async function () { await sb.auth.signOut(); location.reload(); };
+      document.getElementById('logout').onclick = async function () { blobCookie(null); await sb.auth.signOut(); location.reload(); };
     }
     if (profile.role === 'marketer') {
       var view = document.getElementById('view');
       if (view && !document.getElementById('ro-note')) {
         var n = document.createElement('p'); n.className = 'ro-note'; n.id = 'ro-note';
-        n.textContent = 'وضع المتابعة: تشوف كل المهام والتسليمات والاجتماعات، والتعديل عند مديرة المكتب.';
+        n.textContent = 'وضع المتابعة: المهام والتسليمات والاجتماعات ظاهرة لك، والتعديل عند مديرة المكتب.';
         view.parentNode.insertBefore(n, view);
       }
     }
@@ -312,24 +328,26 @@
     if (!cfg.url || !cfg.anon || !window.supabase) { showGate('الإعدادات ناقصة: أضيفي SUPABASE_URL و SUPABASE_ANON_KEY في Vercel.'); return; }
     sb = window.supabase.createClient(cfg.url, cfg.anon, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit' } });
     var recoveryShown = false;
-    sb.auth.onAuthStateChange(function (event) {
+    sb.auth.onAuthStateChange(function (event, session) {
+      if (event === 'TOKEN_REFRESHED' && session && profile) blobCookie(session);
+      if (event === 'SIGNED_OUT') blobCookie(null);
       if (event === 'PASSWORD_RECOVERY' && !recoveryShown) { recoveryShown = true; setMode('reset'); }
     });
     if (LINK_ERR) {
       cleanUrl();
-      setMode('forgot', 'رابط الاستعادة منتهي أو استُخدم قبل. اطلب رابط جديد.');
+      setMode('forgot', 'رابط الاستعادة منتهي أو مستخدم من قبل. يلزم طلب رابط جديد.');
       return;
     }
     if (RECOVERY) {
       var qs = new URLSearchParams(location.search), th = qs.get('token_hash'), code = qs.get('code'), vr = null;
       if (th) vr = await sb.auth.verifyOtp({ token_hash: th, type: 'recovery' });
       else if (code) vr = await sb.auth.exchangeCodeForSession(code);
-      if (vr && vr.error) { cleanUrl(); setMode('forgot', 'رابط الاستعادة منتهي أو استُخدم قبل. اطلب رابط جديد.'); return; }
+      if (vr && vr.error) { cleanUrl(); setMode('forgot', 'رابط الاستعادة منتهي أو مستخدم من قبل. يلزم طلب رابط جديد.'); return; }
     }
     var s = (await sb.auth.getSession()).data.session;
     if (RECOVERY) {
       if (s) { if (!recoveryShown) { recoveryShown = true; setMode('reset'); } }
-      else if (!recoveryShown) setMode('forgot', 'رابط الاستعادة غير صالح. اطلب رابط جديد.');
+      else if (!recoveryShown) setMode('forgot', 'رابط الاستعادة غير صالح. يلزم طلب رابط جديد.');
       return;                        // never open the office from a recovery link
     }
     if (s) afterLogin(s); else showGate('');
