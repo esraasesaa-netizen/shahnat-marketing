@@ -17,7 +17,7 @@
   var SOURCES = ['خرائط قوقل', 'انستقرام', 'إكس', 'تيك توك', 'إحالة', 'الموقع', 'واتساب', 'معرض أو فعالية', 'تواصل مباشر', 'أخرى'];
   /* ready-made WhatsApp messages: warm, professional, no prices or bank details. The office manager can edit them. */
   var DEFAULT_TPL = [
-    { t: 'رسالة تعريف', b: 'السلام عليكم ورحمة الله، حياكم الله {المسؤول}.\nمعك {اسمي} من منصة شحنات. مرّينا على {المحل} وحبينا نعرّفكم علينا: شحنات منصة تجمع لكم أكبر شركات الشحن في مكان واحد، مثل سمسا وأرامكس وJ&T وريدبوكس، وتوصل شحناتكم من الباب للباب داخل المملكة.\nوميزتنا إن فريق خدمة العملاء ينشئ الشحنة عنكم، بدون ما تحتاجون تتعاملون مع أي نظام.\nيناسبكم أرسل لكم التفاصيل؟' },
+    { t: 'رسالة تعريف', b: 'السلام عليكم ورحمة الله، حياكم الله {المسؤول}.\nمعك {اسمي} من منصة شحنات. مرّينا على {المحل} وحبينا نعرّفكم علينا: شحنات منصة تجمع لكم أكبر شركات الشحن في مكان واحد، مثل سمسا وأرامكس وJ&T وريدبوكس، وتوصل شحناتكم من الباب للباب داخل المملكة.\nوميزتنا إن فريق خدمة العملاء ينشئ الشحنة عنكم، بدون ما تحتاجون تتعاملون مع أي نظام.\nيناسبكم أرسل لكم التفاصيل؟ وتقدرون تسجّلون اهتمامكم مباشرة من هنا: {رابطي}' },
     { t: 'متابعة بعد أيام', b: 'السلام عليكم {المسؤول}، معك {اسمي} من شحنات.\nتواصلنا معكم قبل كم يوم بخصوص الشحن، وحبيت أطمّن إذا عندكم أي سؤال.\nولو حابين نجرب معكم أول شحنة، نرتبها لكم من البداية للنهاية.' },
     { t: 'ترحيب بعد التسجيل', b: 'حياكم الله {المسؤول}، سعدنا بانضمام {المحل} لشحنات.\nأول ما تكون عندكم شحنة، أرسلوا لنا تفاصيلها هنا ونجهّزها لكم.\nوأنا {اسمي} بالخدمة لأي استفسار.' },
     { t: 'تذكير بأول شحنة', b: 'مساء الخير {المسؤول}، معك {اسمي} من شحنات.\nحسابكم جاهز عندنا، وإذا عندكم طلب يحتاج يوصل لعميل، أرسلوا لنا بياناته ونتكفل بالباقي.' }
@@ -49,6 +49,8 @@
     else if (/^00/.test(d)) d = d.slice(2);
     return d;
   }
+  function myRef() { var p = S.people.filter(function (x) { return x.id === uid; })[0]; return p && p.ref_code ? p.ref_code : ''; }
+  function refLink(code) { return 'https://shahnat.net/?ref=' + encodeURIComponent(code); }
   function person(id) { var p = S.people.filter(function (x) { return x.id === id; })[0]; return p ? (p.name || 'بدون اسم') : ''; }
   function canEdit(m) { return full || (role === 'marketer' && !!m && m.owner_id === uid); }
   var canAdd = function () { return full || role === 'marketer'; };
@@ -72,9 +74,11 @@
     '#crm .today .fitem small{flex:none;opacity:.85;font-size:12.5px}' +
     '#crm .today p{margin:0;font-size:14px;opacity:.85}' +
     '#crm .search{margin-bottom:12px}' +
+    '#crm .mylink{background:var(--surface);border:1px solid var(--line);border-inline-start:4px solid var(--bright,#F85F22);border-radius:6px;padding:12px 14px;margin-bottom:16px;display:grid;gap:8px}' +
+    '#crm .mylink small{display:block;color:var(--muted);font-size:13px}#crm .mylink .lrow{display:flex;gap:8px}#crm .mylink input{flex:1;min-width:0;font-size:14px}' +
     '#crm .team{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin-bottom:16px}' +
     '#crm .team h3{margin:0 0 8px;font:700 16px var(--display)}#crm .team h3 small{font-weight:400;color:var(--muted);font-size:13px}' +
-    '#crm .trow{display:grid;grid-template-columns:minmax(0,1.6fr) repeat(4,minmax(0,1fr));gap:6px;padding:7px 0;border-top:1px solid var(--line);font-size:14.5px;align-items:center}' +
+    '#crm .trow{display:grid;grid-template-columns:minmax(0,1.5fr) repeat(5,minmax(0,1fr));gap:6px;padding:7px 0;border-top:1px solid var(--line);font-size:14.5px;align-items:center}' +
     '#crm .trow.th{border-top:0;color:var(--muted);font-size:12.5px;padding-top:0}#crm .trow b{font-variant-numeric:tabular-nums;text-align:center}#crm .trow.th span:not(:first-child){text-align:center}' +
     '#crm-sheet .tpl{display:grid;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px}' +
     '#crm .foot{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}' +
@@ -107,7 +111,7 @@
       var r = await Promise.all([
         sb.from('crm_merchants').select('*').order('updated_at', { ascending: false }),
         sb.from('crm_tasks').select('*').eq('done', false).order('due_at', { ascending: true, nullsFirst: false }),
-        sb.from('profiles').select('id,name,role'),
+        sb.from('profiles').select('id,name,role,ref_code'),
         sb.from('docs').select('data').eq('path', 'config/crm_templates').maybeSingle(),
         full ? sb.from('crm_activities').select('created_by,type,merchant_id').neq('type', 'stage_change').gte('created_at', new Date(Date.now() - 7 * 864e5).toISOString()) : Promise.resolve({ data: null })
       ]);
@@ -178,6 +182,8 @@
       return '<button type="button" class="fitem" data-c="open" data-id="' + esc(d.mid) + '"><span>' + esc(d.txt) + '</span><small>' + (d.late ? 'متأخرة · ' : '') + esc(fd(d.at)) + '</small></button>';
     }).join('') + (due.length > 6 ? '<p>و' + (due.length - 6) + ' غيرها.</p>' : '');
     h += '</section>';
+    if (myRef()) h += '<section class="mylink" aria-label="رابطك الخاص"><div><b>رابطك الخاص</b><small>أي تاجر يسجّل من هذا الرابط ينضاف لك تلقائياً.</small></div>' +
+      '<div class="lrow"><input readonly dir="ltr" id="crm-mylink" value="' + esc(refLink(myRef())) + '"><button class="btn" type="button" data-c="copylink">نسخ</button></div></section>';
     if (full) h += teamCard();
     h += '<div class="pipe" role="group" aria-label="المراحل">' + [['all', 'الكل'], ['due', 'مستحق اليوم']].concat(STAGES).map(function (s) {
       return '<button type="button" class="chip" data-c="stage" data-s="' + s[0] + '" aria-pressed="' + (S.stage === s[0]) + '">' + s[1] + '<b>' + (counts[s[0]] || 0) + '</b></button>';
@@ -191,18 +197,18 @@
   }
   function teamCard() {
     var by = {}, acts = S.team || [];
-    function row(id) { return by[id] = by[id] || { merchants: 0, won: 0, contacts: 0, reached: {} }; }
+    function row(id) { return by[id] = by[id] || { merchants: 0, won: 0, contacts: 0, reached: {}, site: 0 }; }
     S.merchants.forEach(function (m) {
-      var r = row(m.owner_id || '-'); r.merchants++;
+      var r = row(m.owner_id || '-'); r.merchants++; if (m.source === 'الموقع') r.site++;
       if (['registered', 'first_shipment', 'active'].indexOf(m.stage) >= 0) r.won++;
     });
     acts.forEach(function (a) { var r = row(a.created_by || '-'); r.contacts++; r.reached[a.merchant_id] = 1; });
     var ids = Object.keys(by).filter(function (k) { return k !== '-'; });
     if (!ids.length) return '';
     ids.sort(function (a, b) { return by[b].contacts - by[a].contacts; });
-    return '<section class="team" aria-label="أداء الفريق"><h3>أداء الفريق <small>آخر 7 أيام</small></h3><div class="trow th"><span>الاسم</span><span>تواصل</span><span>محلات</span><span>عندها</span><span>تحوّلوا</span></div>' +
+    return '<section class="team" aria-label="أداء الفريق"><h3>أداء الفريق <small>آخر 7 أيام</small></h3><div class="trow th"><span>الاسم</span><span>تواصل</span><span>محلات</span><span>عندها</span><span>من الموقع</span><span>تحوّلوا</span></div>' +
       ids.map(function (k) { var r = by[k];
-        return '<div class="trow"><span>' + esc(person(k) || 'غير معروف') + '</span><b>' + r.contacts + '</b><b>' + Object.keys(r.reached).length + '</b><b>' + r.merchants + '</b><b>' + r.won + '</b></div>';
+        return '<div class="trow"><span>' + esc(person(k) || 'غير معروف') + '</span><b>' + r.contacts + '</b><b>' + Object.keys(r.reached).length + '</b><b>' + r.merchants + '</b><b>' + r.site + '</b><b>' + r.won + '</b></div>';
       }).join('') + '</section>';
   }
   function drawList() {
@@ -424,11 +430,12 @@
       .replace(/\{المحل\}/g, m.name || '')
       .replace(/\{المسؤول\}/g, m.contact_name || '')
       .replace(/\{اسمي\}/g, myName || '')
+      .replace(/\{رابطي\}/g, myRef() ? refLink(myRef()) : 'https://shahnat.net')
       .replace(/[ \t]+([،,.!؟])/g, '$1').replace(/[ \t]{2,}/g, ' ').replace(/ +\n/g, '\n').trim();
   }
   function tplEditor() {
     var list = S.tplDraft || (S.tplDraft = (S.tpl || DEFAULT_TPL).map(function (t) { return { t: t.t, b: t.b }; }));
-    return '<div class="form"><p class="muted" style="margin:0">تقدرين تستخدمين داخل الرسالة: <b>{المحل}</b> لاسم المحل، و<b>{المسؤول}</b> لاسم صاحبه، و<b>{اسمي}</b> لاسم المسوّقة اللي ترسل. إذا ما فيه اسم مسؤول، تنشال الكلمة تلقائياً.</p>' +
+    return '<div class="form"><p class="muted" style="margin:0">تقدرين تستخدمين داخل الرسالة: <b>{المحل}</b> لاسم المحل، و<b>{المسؤول}</b> لاسم صاحبه، و<b>{اسمي}</b> لاسم المسوّقة اللي ترسل، و<b>{رابطي}</b> لرابطها الخاص في موقع شحنات. إذا ما فيه اسم مسؤول، تنشال الكلمة تلقائياً.</p>' +
       list.map(function (t, i) {
         return '<div class="tpl"><label>عنوان الرسالة<input id="tp-t-' + i + '" value="' + esc(t.t) + '"></label>' +
           '<label>نص الرسالة<textarea id="tp-b-' + i + '" style="min-height:150px">' + esc(t.b) + '</textarea></label>' +
@@ -486,6 +493,10 @@
       });
     },
     export: exportCSV,
+    copylink: function () {
+      var el = $('#crm-mylink'); if (!el) return;
+      (navigator.clipboard ? navigator.clipboard.writeText(el.value) : Promise.reject()).then(function () { toast('انسخ الرابط'); }, function () { el.select(); document.execCommand('copy'); toast('انسخ الرابط'); });
+    },
     close: closeSheet,
     create: function () {
       var row = readForm();
@@ -606,6 +617,11 @@
     if (root && !root.hidden && !S.loaded && !S.loading) { live(); draw(); load(); }
   }
   document.addEventListener('office:auth', auth);
+  document.addEventListener('crm:open', function (e) {
+    var id = e.detail; if (!id) return;
+    function go() { if (merchant(id)) { openSheet({ type: 'merchant', id: id }); loadMerchant(id); } }
+    if (S.loaded) { Promise.resolve(load()).then(go); } else { var n = 0, t = setInterval(function () { if (S.loaded || ++n > 40) { clearInterval(t); go(); } }, 250); }
+  });
   document.addEventListener('office:view', function (e) {
     if (!root) setup();
     if (!root) return;

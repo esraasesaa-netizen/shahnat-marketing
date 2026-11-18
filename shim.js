@@ -6,7 +6,7 @@
   var MANAGER_ONLY = ['newtask', 'create', 'start', 'stop', 'approve', 'revise', 'reopen', 'deltask', 'rmatt', 'pickfile',
     'dellesson', 'savecompany', 'meetstart', 'meetstop', 'meetadd', 'meetnotes', 'tpl'];
   var CEO_ALLOWED = ['meetstart', 'meetstop', 'meetnotes'];   /* the executive director controls the meeting room only */
-  var ROLE_NAME = { manager: 'مديرة المكتب', ceo: 'المدير التنفيذي', admin: 'الرئيس التنفيذي', marketer: 'مسوّق' };
+  var ROLE_NAME = { manager: 'مديرة المكتب', ceo: 'المدير التنفيذي', admin: 'الرئيس التنفيذي', marketer: 'فريق التسويق' };
   function isFull() { return !!profile && (profile.role === 'manager' || profile.role === 'admin'); }   /* full permissions */
 
   var sb = null, profile = null, authResolve;
