@@ -257,8 +257,10 @@ nav.bar button[aria-current="page"]{color:var(--accent-text);font-weight:800;bac
     <div class="brand"><div class="logo" id="logo"></div><div><h1>المكتب التسويقي لمنصة شحنات</h1><p id="today"></p></div></div>
     <div class="tools" id="tools"></div>
   </header>
+  <section id="teammeet" hidden></section>
   <main id="view" aria-live="polite"></main>
   <section id="crm" hidden></section>
+  <section id="myday" hidden></section>
 </div>
 <div id="sheet" dir="rtl" lang="ar" hidden></div>
 <nav class="bar" id="nav" dir="rtl" aria-label="التنقل"></nav>
@@ -315,7 +317,7 @@ var CEOIC='<span class="fl"><svg viewBox="0 0 24 24" fill="none" stroke="current
 var SCENE='<div class="scene" aria-hidden="true"><svg viewBox="0 0 600 100" preserveAspectRatio="xMidYMid slice"><path class="road" d="M0 80h600"/><g class="truckw"><g class="truck"><path class="sp" d="M-46 50h34M-36 60h26M-42 68h30"/><rect x="0" y="40" width="46" height="30" rx="3" fill="var(--bright)"/><path d="M46 48h15l11 11v11H46z" fill="var(--bright)"/><path d="M52 52h8l6 7h-14z" fill="#fff" opacity=".85"/><circle cx="14" cy="72" r="7" fill="var(--navy)"/><circle cx="58" cy="72" r="7" fill="var(--navy)"/></g></g></svg></div>';
 var EMP={};EMPS.forEach(function(e){EMP[e.key]=e});
 var STATUS={'new':'جديدة','doing':'قيد التنفيذ','review':'بانتظار مراجعتك','done':'مكتملة'};
-var VIEWS=['office','tasks','crm','meeting','notes'];var LOGO='/logo.jpg';
+var VIEWS=['office','tasks','crm','meeting','notes','today'];var LOGO='/logo.jpg';
 
 /* ---------- state ---------- */
 var state={view:'office',sheet:null,filter:'all',tasks:[],notes:[],alerts:[],ceo:true,mgr:true,role:'manager',emps:{},meetings:[],company:'',
@@ -388,6 +390,7 @@ function ico(name){
     meeting:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M17 14.2c2.4.3 4 2.3 4 5.8"/>',
     clip:'<path d="M20 11.5l-7.8 7.8a5 5 0 01-7-7l8.5-8.5a3.3 3.3 0 014.7 4.7l-8.5 8.5a1.7 1.7 0 01-2.4-2.4l7.8-7.8"/>',
     x:'<path d="M6 6l12 12M18 6L6 18"/>',
+    today:'<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4M8.5 14l2.2 2.2L15.5 12"/>',
     crm:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/><circle cx="12" cy="12.5" r="2"/><path d="M8.5 17.5c.6-1.6 2-2.5 3.5-2.5s2.9.9 3.5 2.5"/>'};
   return '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p[name]+'</svg>';
 }
@@ -412,13 +415,13 @@ function render(){
   var keep=keepSnap();
   var sheetEl=$('#sheet'),st=sheetEl.scrollTop;
   $('#today').textContent=fmtLong(now());
-  if(!state.mgr&&!(state.role==='marketer'&&state.view==='crm'))state.view=state.role==='marketer'?'crm':'meeting';
+  if(state.role==='marketer'){if(state.view!=='crm'&&state.view!=='today')state.view='today'}else if(!state.mgr)state.view='meeting';else if(state.view==='today')state.view='office';
   var unr=state.alerts.filter(function(a){return !a.read}).length;
   $('#tools').innerHTML=state.mgr?'<button class="mini" data-act="alerts" type="button">التنبيهات'+(unr?'<b class="badge">'+n(unr)+'</b>':'')+'</button><button class="mini" data-act="company" type="button">ملف الشركة</button>':'';
   $('#logo').innerHTML=LOGO?'<img src="'+LOGO+'" alt="شعار شحنات">':'<span class="wm">شحنات</span>';
   renderNav();
   $('#view').innerHTML=renderView();
-  $('#view').hidden=state.view==='crm';
+  $('#view').hidden=state.view==='crm'||state.view==='today';
   document.dispatchEvent(new CustomEvent('office:view',{detail:state.view}));
   if(state.sheet){sheetEl.innerHTML=renderSheet();sheetEl.hidden=false;document.body.style.overflow='hidden';sheetEl.scrollTop=st}
   else{sheetEl.innerHTML='';sheetEl.hidden=true;document.body.style.overflow=''}
@@ -426,7 +429,7 @@ function render(){
 }
 function renderNav(){
   var items=[['office','المكتب'],['tasks','المهام'],['crm','العملاء'],['meeting','الاجتماع'],['notes','الملاحظات']];
-  if(!state.mgr)items=state.role==='marketer'?[items[2],items[3]]:[items[3]];
+  if(!state.mgr)items=state.role==='marketer'?[['today','يومي'],items[2]]:[items[3]];
   $('#nav').innerHTML=items.map(function(it){
     return '<button type="button" data-act="nav" data-v="'+it[0]+'"'+(state.view===it[0]?' aria-current="page"':'')+'>'+ico(it[0])+'<span>'+it[1]+'</span></button>';
   }).join('');
@@ -435,7 +438,7 @@ function renderView(){
   if(!db)return '<div class="empty">سجّلي دخولك عشان تفتح بيانات المكتب.</div>';
   if(state.dbErr&&state.dbErr!=='slow')return '<div class="empty">تعذر فتح بيانات المكتب ('+esc(state.dbErr)+'). أعيدي تحميل الصفحة.</div>';
   if(!state.ready.t){return '<div class="empty"><span class="spin"></span> نفتح المكتب…'+(state.slow?'<br>الاتصال بطيء، ممكن تكون البيانات غير محدثة.':'')+'</div>'}
-  if(state.view==='crm')return '';
+  if(state.view==='crm'||state.view==='today')return '';
   if(state.view==='tasks')return viewTasks();
   if(state.view==='meeting')return viewMeeting();
   if(state.view==='notes')return viewNotes();
@@ -985,7 +988,7 @@ render();
   if(state.mgr){
     db.collection('notes').onSnapshot(function(s){state.notes=s.docs.map(function(d){return Object.assign({id:d.id},d.data())});render()},fail);
     db.collection('alerts').onSnapshot(function(s){
-      var list=s.docs.map(function(d){return Object.assign({id:d.id},d.data())});
+      var list=s.docs.map(function(d){return Object.assign({id:d.id},d.data())}).filter(function(a){return !a.to});
       if(alertsReady)list.forEach(function(a){if(!a.read&&!alertIds[a.id])notify(a)});
       alertIds={};list.forEach(function(a){alertIds[a.id]=1});
       state.alerts=list;alertsReady=true;render();
@@ -1007,5 +1010,6 @@ render();
 })();
 </script>
 <script src="/crm.js"></script>
+<script src="/team.js"></script>
 
 </body></html>

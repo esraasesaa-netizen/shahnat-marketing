@@ -74,6 +74,8 @@
     '#crm .today .fitem small{flex:none;opacity:.85;font-size:12.5px}' +
     '#crm .today p{margin:0;font-size:14px;opacity:.85}' +
     '#crm .search{margin-bottom:12px}' +
+    '#crm .goals{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px;border-top:1px solid var(--line);margin-top:8px;padding-top:10px}#crm .goals>b{width:100%;font-size:14px}' +
+    '#crm .goals label{display:grid;gap:4px;font-size:13.5px}#crm .goals input{width:90px}' +
     '#crm .mylink{background:var(--surface);border:1px solid var(--line);border-inline-start:4px solid var(--bright,#F85F22);border-radius:6px;padding:12px 14px;margin-bottom:16px;display:grid;gap:8px}' +
     '#crm .mylink small{display:block;color:var(--muted);font-size:13px}#crm .mylink .lrow{display:flex;gap:8px}#crm .mylink input{flex:1;min-width:0;font-size:14px}' +
     '#crm .team{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin-bottom:16px}' +
@@ -111,7 +113,7 @@
       var r = await Promise.all([
         sb.from('crm_merchants').select('*').order('updated_at', { ascending: false }),
         sb.from('crm_tasks').select('*').eq('done', false).order('due_at', { ascending: true, nullsFirst: false }),
-        sb.from('profiles').select('id,name,role,ref_code'),
+        sb.from('profiles').select('id,name,role,ref_code,weekly_goal'),
         sb.from('docs').select('data').eq('path', 'config/crm_templates').maybeSingle(),
         full ? sb.from('crm_activities').select('created_by,type,merchant_id').neq('type', 'stage_change').gte('created_at', new Date(Date.now() - 7 * 864e5).toISOString()) : Promise.resolve({ data: null })
       ]);
@@ -204,12 +206,16 @@
     });
     acts.forEach(function (a) { var r = row(a.created_by || '-'); r.contacts++; r.reached[a.merchant_id] = 1; });
     var ids = Object.keys(by).filter(function (k) { return k !== '-'; });
-    if (!ids.length) return '';
+    var mk = S.people.filter(function (p) { return p.role === 'marketer'; });
+    var goals = mk.length ? '<div class="goals"><b>هدف الأسبوع (عدد التواصل)</b>' + mk.map(function (p) {
+      return '<label>' + esc(p.name || 'بدون اسم') + '<input type="number" min="0" max="1000" inputmode="numeric" class="goal-in" data-id="' + esc(p.id) + '" value="' + (p.weekly_goal == null ? 20 : p.weekly_goal) + '"></label>';
+    }).join('') + '<button class="btn" type="button" data-c="savegoals">حفظ الأهداف</button></div>' : '';
+    if (!ids.length) return mk.length ? '<section class="team" aria-label="أداء الفريق"><h3>أداء الفريق</h3><p class="muted" style="margin:0 0 8px;font-size:14px">ما فيه نشاط للحين.</p>' + goals + '</section>' : '';
     ids.sort(function (a, b) { return by[b].contacts - by[a].contacts; });
     return '<section class="team" aria-label="أداء الفريق"><h3>أداء الفريق <small>آخر 7 أيام</small></h3><div class="trow th"><span>الاسم</span><span>تواصل</span><span>محلات</span><span>عندها</span><span>من الموقع</span><span>تحوّلوا</span></div>' +
       ids.map(function (k) { var r = by[k];
         return '<div class="trow"><span>' + esc(person(k) || 'غير معروف') + '</span><b>' + r.contacts + '</b><b>' + Object.keys(r.reached).length + '</b><b>' + r.merchants + '</b><b>' + r.site + '</b><b>' + r.won + '</b></div>';
-      }).join('') + '</section>';
+      }).join('') + goals + '</section>';
   }
   function drawList() {
     var el = $('#crm-list'); if (!el) return;
@@ -493,6 +499,12 @@
       });
     },
     export: exportCSV,
+    savegoals: function () {
+      var ins = Array.prototype.slice.call(root.querySelectorAll('.goal-in'));
+      Promise.all(ins.map(function (i) { return sb.rpc('set_weekly_goal', { p_user: i.dataset.id, p_goal: Math.max(0, parseInt(i.value, 10) || 0) }); }))
+        .then(function (rs) { if (rs.some(function (r) { return r.error; })) throw 0; toast('انحفظت الأهداف'); load(); }, function () { toast('تعذر حفظ الأهداف'); })
+        .catch(function () { toast('تعذر حفظ الأهداف'); });
+    },
     copylink: function () {
       var el = $('#crm-mylink'); if (!el) return;
       (navigator.clipboard ? navigator.clipboard.writeText(el.value) : Promise.reject()).then(function () { toast('انسخ الرابط'); }, function () { el.select(); document.execCommand('copy'); toast('انسخ الرابط'); });
