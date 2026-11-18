@@ -54,7 +54,7 @@
     MANAGER_ONLY.map(function (a) { return 'body.ro [data-act="' + a + '"]'; }).join(',') + '{display:none!important}' +
     MANAGER_ONLY.filter(function (a) { return CEO_ALLOWED.indexOf(a) < 0; }).map(function (a) { return 'body.ro-ceo [data-act="' + a + '"]'; }).join(',') + '{display:none!important}' +
     'body.ro #file-in,body.ro .block p.err,body.ro .nudge{display:none!important}' +
-    'body.ro textarea{pointer-events:none;background:var(--soft,#E8ECF4)}';
+    'body.ro #view textarea,body.ro #sheet textarea{pointer-events:none;background:var(--soft,#E8ECF4)}';
   document.head.appendChild(css);
 
   var gate = document.createElement('div');
@@ -170,15 +170,7 @@
       top.appendChild(w);
       document.getElementById('logout').onclick = async function () { blobCookie(null); await sb.auth.signOut(); location.reload(); };
     }
-    if (profile.role === 'marketer') {
-      var view = document.getElementById('view');
-      if (view && !document.getElementById('ro-note')) {
-        var n = document.createElement('p'); n.className = 'ro-note'; n.id = 'ro-note';
-        n.textContent = 'وضع المتابعة: المهام والتسليمات والاجتماعات ظاهرة لك، والتعديل عند مديرة المكتب.';
-        view.parentNode.insertBefore(n, view);
-      }
-    }
-    window.officeAuth = { sb: sb, profile: profile, uid: session.user.id, full: isFull() };   /* used by crm.js */
+    window.officeAuth = { sb: sb, profile: profile, uid: session.user.id, full: isFull(), role: profile.role, name: profile.name || '' };   /* used by crm.js */
     document.dispatchEvent(new CustomEvent('office:auth'));
     authResolve();
   }

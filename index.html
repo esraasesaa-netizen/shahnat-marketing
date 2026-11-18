@@ -412,7 +412,7 @@ function render(){
   var keep=keepSnap();
   var sheetEl=$('#sheet'),st=sheetEl.scrollTop;
   $('#today').textContent=fmtLong(now());
-  if(!state.mgr)state.view='meeting';
+  if(!state.mgr&&!(state.role==='marketer'&&state.view==='crm'))state.view=state.role==='marketer'?'crm':'meeting';
   var unr=state.alerts.filter(function(a){return !a.read}).length;
   $('#tools').innerHTML=state.mgr?'<button class="mini" data-act="alerts" type="button">التنبيهات'+(unr?'<b class="badge">'+n(unr)+'</b>':'')+'</button><button class="mini" data-act="company" type="button">ملف الشركة</button>':'';
   $('#logo').innerHTML=LOGO?'<img src="'+LOGO+'" alt="شعار شحنات">':'<span class="wm">شحنات</span>';
@@ -426,7 +426,7 @@ function render(){
 }
 function renderNav(){
   var items=[['office','المكتب'],['tasks','المهام'],['crm','العملاء'],['meeting','الاجتماع'],['notes','الملاحظات']];
-  if(!state.mgr)items=[items[3]];
+  if(!state.mgr)items=state.role==='marketer'?[items[2],items[3]]:[items[3]];
   $('#nav').innerHTML=items.map(function(it){
     return '<button type="button" data-act="nav" data-v="'+it[0]+'"'+(state.view===it[0]?' aria-current="page"':'')+'>'+ico(it[0])+'<span>'+it[1]+'</span></button>';
   }).join('');
