@@ -6,6 +6,7 @@
   'use strict';
 
   var TEAM = [
+    { key: 'lead', n: 'فيصل', role: 'مدير الفريق', g: 'm', x: 120, y: -310 },
     { key: 'seo', n: 'ريم', role: 'السيو و GEO', g: 'f', x: -170, y: -80 },
     { key: 'social', n: 'نواف', role: 'السوشال ميديا', g: 'm', x: 110, y: -80 },
     { key: 'content', n: 'لمى', role: 'المحتوى والكتابة', g: 'f', x: 390, y: -80 },

@@ -249,6 +249,12 @@ nav.bar button[aria-current="page"]{color:var(--accent-text);font-weight:800;bac
  .scene{height:74px}
 }
 @media(min-width:900px){html{zoom:1.2}.wrap{max-width:1000px}.top h1{font-size:26px}.scene{height:110px}}
+#sheet .ld-board{display:grid;gap:0;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:4px 12px}
+.ld-row{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(4,minmax(0,1fr));gap:6px;padding:9px 0;border-top:1px solid var(--line);font-size:14.5px;align-items:center}
+.ld-row:first-child{border-top:0}.ld-row span{text-align:center;font-variant-numeric:tabular-nums}.ld-row.th{color:var(--muted);font-size:12.5px}.ld-row .late{color:var(--bad);font-weight:700}
+.ld-pick{display:grid;gap:6px;margin-bottom:10px}
+#sheet .prog span{font-size:14px;color:var(--muted)}#sheet .prog .bar{height:8px;background:var(--soft);border-radius:4px;margin-top:6px}#sheet .prog .bar i{background:var(--bright)}
+.linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--accent-text);text-decoration:underline;cursor:pointer}
 </style>
 </head>
 <body>
@@ -276,6 +282,13 @@ document.documentElement.dir='rtl';
 
 /* ---------- the team ---------- */
 var EMPS=[
+ {key:'lead',n:'فيصل',room:'إدارة الفريق',role:'مدير الفريق',
+  duties:'يستلم الأهداف الكبيرة من مديرة التسويق، ويقسّمها مهام على ريم ونواف ولمى وسلطان وهيا مع مواعيد البدء، ويتابع التنفيذ والمتأخر، ويراجع كل تسليم قبل ما يوصل للمديرة، ويرفع لها ملخصاً يومياً.',
+  style:'منظم وواضح ومباشر، يكتب الخطط بنقاط قصيرة ويحدد المسؤول وموعد كل خطوة، ويراجع التسليمات بمعيار عالٍ بدون مجاملة.',
+  tpl:[
+   {t:'حملة الشهر القادم',b:'نبي حملة تسويقية للشهر القادم هدفها نجيب متاجر جديدة تشحن مع شحنات. وزّعها على الفريق: محتوى السوشال، مقالات وصفحات للموقع، إعلانات، ومؤشرات قياس.'},
+   {t:'إطلاق خدمة أو عرض جديد',b:'عندنا عرض/خدمة جديدة [اكتبي التفاصيل]. جهّز خطة إطلاق كاملة ووزّعها على الفريق.'},
+   {t:'خطة أسبوع للفريق',b:'جهّز خطة عمل هذا الأسبوع للفريق كامل بناءً على أولوياتنا: [اكتبي الأولويات].'}]},
  {key:'seo',n:'ريم',room:'السيو و GEO',role:'أخصائية السيو و GEO',
   duties:'رفع ظهور موقع shahnat.net في نتائج البحث وفي إجابات محركات الذكاء الاصطناعي (GEO)، بحث الكلمات المفتاحية، تدقيق الصفحات، صفحات الأسئلة الشائعة، البيانات المنظمة (schema)، الروابط الداخلية، وخطة المحتوى التقني.',
   style:'تحليلية ومرتبة، تقدم الأولويات من الأعلى أثراً إلى الأقل، وتفصل بين ما يلزم تنفيذه الآن وما يمكن تأجيله.',
@@ -312,7 +325,7 @@ var EMPS=[
    {t:'تحليل أداء منشورات الأسبوع',b:'ألصقي أرقام كل منشور (وصول، تفاعل، نقرات) وسأحدد ما نجح ولماذا وما نكرره.'},
    {t:'مؤشرات الأداء المقترحة للتسويق',b:'اقترحي لوحة مؤشرات بسيطة لتسويق شحنات: أهم 8 مؤشرات، كيف تُحسب، وكل كم نراجعها.'}]}
 ];
-var RI={seo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M16 16l5 5"/></svg>',social:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.5-7-10a4 4 0 017-2.5A4 4 0 0119 10c0 5.5-7 10-7 10z"/></svg>',content:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg>',growth:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6 4 4 6-7"/><path d="M15 8h5v5"/></svg>',analytics:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>',meet:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>'};
+var RI={lead:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="3"/><path d="M6 20v-2a6 6 0 0112 0v2"/><path d="M3 13l2 2 3-3M16 12l2 2 3-3"/></svg>',seo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M16 16l5 5"/></svg>',social:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.5-7-10a4 4 0 017-2.5A4 4 0 0119 10c0 5.5-7 10-7 10z"/></svg>',content:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg>',growth:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6 4 4 6-7"/><path d="M15 8h5v5"/></svg>',analytics:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>',meet:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>'};
 var CEOIC='<span class="fl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></span><span class="fl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14v10H10l-5 4z"/></svg></span><span class="fl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 17h12l-1.5-2V11a4.5 4.5 0 00-9 0v4z"/><path d="M10 20h4"/></svg></span>';
 var SCENE='<div class="scene" aria-hidden="true"><svg viewBox="0 0 600 100" preserveAspectRatio="xMidYMid slice"><path class="road" d="M0 80h600"/><g class="truckw"><g class="truck"><path class="sp" d="M-46 50h34M-36 60h26M-42 68h30"/><rect x="0" y="40" width="46" height="30" rx="3" fill="var(--bright)"/><path d="M46 48h15l11 11v11H46z" fill="var(--bright)"/><path d="M52 52h8l6 7h-14z" fill="#fff" opacity=".85"/><circle cx="14" cy="72" r="7" fill="var(--navy)"/><circle cx="58" cy="72" r="7" fill="var(--navy)"/></g></g></svg></div>';
 var EMP={};EMPS.forEach(function(e){EMP[e.key]=e});
@@ -596,7 +609,8 @@ function sheetRoom(k){
   var l=sortTasks(empTasks(k)),ls=(state.emps[k]&&state.emps[k].lessons)||[];
   var h=shead('غرفة '+n(EMPS.indexOf(e)+1)+' · '+e.room)+'<div class="who"><div class="av" aria-hidden="true">'+esc(e.n.charAt(0))+'</div><div><h2>'+esc(e.n)+'</h2><p>'+esc(e.role)+'</p></div></div>';
   h+='<p class="muted" style="margin:0">'+esc(e.duties)+'</p>';
-  h+='<div class="block"><button class="btn pri wide" type="button" data-act="newtask" data-k="'+k+'">كلّفي '+esc(e.n)+' بمهمة</button></div>';
+  h+='<div class="block"><button class="btn pri wide" type="button" data-act="newtask" data-k="'+k+'">'+(k==='lead'?'أعطي فيصل هدف يوزّعه':'كلّفي '+esc(e.n)+' بمهمة')+'</button></div>';
+  if(k==='lead')h+=leadBoard();
   h+='<div class="block"><h3>مهام '+esc(e.n)+'</h3>'+(l.length?'<div class="tasks">'+l.map(taskRow).join('')+'</div>':'<div class="empty">ما في مهام لهذه الغرفة بعد.</div>')+'</div>';
   h+='<div class="block"><h3>توجيهاتك الدائمة</h3><p class="muted" style="margin:0">تُضاف هنا لما تحفظين ملاحظة تعديل كتوجيه دائم، ويلتزم بها '+esc(e.n)+' في كل مهمة جاية.</p>';
   h+=ls.length?'<div class="lessons">'+ls.map(function(x,i){return '<div class="lesson"><span>'+esc(x)+'</span><button class="btn danger" type="button" data-act="dellesson" data-k="'+k+'" data-i="'+i+'">حذف</button></div>'}).join('')+'</div>':'<div class="empty">ما في توجيهات بعد.</div>';
@@ -631,6 +645,9 @@ function sheetTask(id){
   h+='<div style="margin-top:8px"><span class="pill p-'+esc(t.status)+'">'+esc(STATUS[t.status]||t.status)+'</span></div><h2 style="font:700 24px/1.35 var(--display);margin:10px 0 8px">'+esc(t.title)+'</h2>';
   h+='<div class="meta"><span>'+esc(e.n)+' · '+esc(e.role)+'</span>'+(t.due?'<span class="'+(isLate(t)?'late':'')+'">الموعد: '+esc(dueLabel(t.due))+(t.dueTime?' · '+esc(t.dueTime):'')+(isLate(t)?' (متأخرة)':'')+'</span>':'')+(t.priority==='high'?'<span class="hot">عاجلة</span>':'')+'</div>';
   if(t.brief)h+='<div class="block"><h3>التفاصيل</h3><div class="paper brief">'+esc(t.brief)+'</div></div>';
+  if(t.parent&&getTask(t.parent))h+='<p class="muted" style="margin:10px 0 0">ضمن هدف وزّعه فيصل: <button type="button" class="linkbtn" data-act="task" data-id="'+esc(t.parent)+'">'+esc(getTask(t.parent).title)+'</button></p>';
+  if(t.leadNote&&t.status==='review')h+='<div class="block"><h3>ملاحظة فيصل</h3><div class="paper">'+esc(t.leadNote)+'</div></div>';
+  if(t.emp==='lead'&&!t.parent)h+=leadTaskBlock(t);
   /* execution */
   if(run){
     h+='<div class="block"><h3>'+esc(e.n)+' يكتب التسليم…</h3><div class="paper md typing" id="live-'+esc(id)+'">'+(run.text?md(run.text):'يفكر في المهمة…')+'</div><div class="actions"><button class="btn" type="button" data-act="stop" data-id="'+esc(id)+'">إيقاف</button></div></div>';
@@ -641,7 +658,7 @@ function sheetTask(id){
     }
     if(t.status==='new'||t.status==='doing'){
       h+='<div class="block">'+(t.status==='doing'?'<p class="muted" style="margin:0">توقف التنفيذ قبل ما يكتمل. أعيدي التشغيل.</p>':'')+
-        '<button class="btn pri wide" type="button" data-act="start" data-id="'+esc(id)+'"'+(sample?'':' disabled')+'>'+(t.status==='doing'?'أعيدي التنفيذ':'ابدأ التنفيذ')+'</button>'+(sample?'':'<p class="err">تشغيل الموظفين غير متاح في هذا العرض.</p>')+'</div>';
+        '<button class="btn pri wide" type="button" data-act="start" data-id="'+esc(id)+'"'+(sample?'':' disabled')+'>'+(t.emp==='lead'?'خلّي فيصل يوزّعه على الفريق':(t.status==='doing'?'أعيدي التنفيذ':'ابدأ التنفيذ'))+'</button>'+(sample?'':'<p class="err">تشغيل الموظفين غير متاح في هذا العرض.</p>')+'</div>';
     }
     if(t.status==='review'){
       h+='<div class="block"><h3>قرارك</h3><button class="btn pri wide" type="button" data-act="approve" data-id="'+esc(id)+'">اعتمدي التسليم</button>'+
@@ -732,6 +749,7 @@ function dueRun(t){
   return new Date(+p[0],+p[1]-1,+p[2],+tm[0],+tm[1])<=new Date();
 }
 function autoRun(){
+  if(state.role==='manager'&&state.ready.t)leadWatch();
   if(state.role!=='manager'||!sample||!state.ready.t)return;   /* only the office manager's open page runs scheduled tasks, so two open pages never run the same task twice */
   var c=Object.keys(state.running).length;
   state.tasks.filter(dueRun).forEach(function(t){if(c<2&&!state.running[t.id]){c++;runTask(t.id)}});
@@ -739,13 +757,14 @@ function autoRun(){
 function sheetAlerts(){
   var l=state.alerts.slice().sort(function(a,b){return a.at<b.at?1:-1}).slice(0,40);
   var h=shead('التنبيهات')+'<div class="actions" style="margin:8px 0 14px"><button class="btn" type="button" data-act="alertsread">تعليم الكل كمقروء</button>'+((window.Notification&&Notification.permission==='default')?'<button class="btn" type="button" data-act="notifyperm">تفعيل إشعارات المتصفح</button>':'')+'</div>';
-  h+=l.length?'<div class="hist">'+l.map(function(a){return '<button type="button" class="'+(a.read?'':'unr')+'" data-act="alertopen" data-id="'+esc(a.id)+'"><span>'+(a.type==='meeting_request'?'طلب اجتماع · ':a.type==='minutes'?'محضر اجتماع · ':a.type==='security'||a.type==='lead'?'':'تسليم جاهز · ')+esc(a.text)+'</span><small>'+esc(fmtLong(a.at))+'</small></button>'}).join('')+'</div>':'<div class="empty">ما في تنبيهات بعد.</div>';
+  h+=l.length?'<div class="hist">'+l.map(function(a){return '<button type="button" class="'+(a.read?'':'unr')+'" data-act="alertopen" data-id="'+esc(a.id)+'"><span>'+(a.type==='meeting_request'?'طلب اجتماع · ':a.type==='minutes'?'محضر اجتماع · ':a.type==='security'||a.type==='lead'||a.type==='lead_late'||a.type==='lead_daily'?'':'تسليم جاهز · ')+esc(a.text)+'</span><small>'+esc(fmtLong(a.at))+'</small></button>'}).join('')+'</div>':'<div class="empty">ما في تنبيهات بعد.</div>';
   return h+'<p class="muted" style="margin-top:14px">التنبيهات تصل والصفحة مفتوحة، ولا تُرسل إشعارات وهي مغلقة.</p>';
 }
 /* ---------- actions ---------- */
 async function runTask(id,note,fb){
   var t=getTask(id,fb);
   if(!t||state.running[id])return;
+  if(t.emp==='lead'&&!t.parent)return runLead(id,note,fb);
   if(!sample){toast('تشغيل الموظفين غير متاح في هذا العرض');return}
   var prevStatus=t.output?'review':'new';
   var ctl=new AbortController();
@@ -757,13 +776,139 @@ async function runTask(id,note,fb){
       if(state.running[id])state.running[id].text=u.text;
       var el=document.getElementById('live-'+id);if(el)el.innerHTML=md(u.text);
     }});
-    await patch(id,{output:r.text,status:'review',truncated:!!r.truncated,revisions:(t.revisions||0)+(note?1:0),lastRunAt:now()});addAlert('task_ready',id,(EMP[t.emp]||{n:''}).n+' سلّم: '+t.title);
+    await patch(id,{output:r.text,status:'review',truncated:!!r.truncated,revisions:(t.revisions||0)+(note?1:0),lastRunAt:now()});
+    if(t.parent)leadReview(id,r.text);else addAlert('task_ready',id,(EMP[t.emp]||{n:''}).n+' سلّم: '+t.title);
   }catch(e){
     if(e&&e.code!=='cancelled')state.err[id]=sampleErr(e&&e.code);
     await patch(id,{status:prevStatus});
   }finally{
     delete state.running[id];render();
   }
+}
+
+/* ---------- Faisal, the team lead ---------- */
+var TEAMKEYS=['seo','social','content','growth','analytics'];
+function addDays(n){var d=new Date();d.setDate(d.getDate()+n);return ymd(d)}
+function childrenOf(id){return state.tasks.filter(function(x){return x.parent===id})}
+function buildLeadPrompt(t,note){
+  var team=TEAMKEYS.map(function(k){var e=EMP[k];return '- '+k+': '+e.n+'، '+e.role+'. '+e.duties}).join('\n');
+  return ['أنت فيصل، مدير الفريق في المكتب التسويقي لمنصة شحنات. مديرة التسويق تعطيك هدفاً، وأنت تقسّمه مهام واضحة على الفريق.',
+   'الفريق:\n'+team, companyBlock(), lessonsBlock('lead'),
+   'الهدف: '+t.title+'\nالتفاصيل: '+(t.brief||'لا توجد تفاصيل إضافية.')+'\nالأولوية: '+(t.priority==='high'?'عاجلة':'عادية')+(t.due?'\nالموعد النهائي: '+t.due:'')+'\nتاريخ اليوم: '+todayStr,
+   note?'خطتك السابقة:\n'+String(t.output||'').slice(0,6000)+'\n\nملاحظة المديرة: '+note+'\nعدّل الخطة بناءً على الملاحظة.':'',
+   'المطلوب: رد بصيغة JSON فقط بدون أي نص قبله أو بعده، بهذا الشكل:\n{"summary":"ملخص الخطة في سطرين","tasks":[{"emp":"seo|social|content|growth|analytics","title":"عنوان قصير","brief":"المطلوب بالتفصيل وما يسلّمه الموظف","start_in_days":0,"priority":"normal|high"}]}',
+   'قواعد: من 2 إلى 8 مهام. كل مهمة لموظف واحد من القائمة وضمن تخصصه. اكتب التفاصيل كأنك تكلّف الموظف مباشرة. start_in_days عدد الأيام من اليوم قبل ما يبدأ (0 يعني اليوم)، ورتّب البدء بحيث المهام اللي تعتمد على غيرها تبدأ بعدها. لا تخترع أرقاماً أو أسعاراً.'
+  ].filter(Boolean).join('\n\n');
+}
+function readJSON(txt){var a=String(txt||'').indexOf('{'),b=String(txt||'').lastIndexOf('}');if(a<0||b<a)return null;try{return JSON.parse(txt.slice(a,b+1))}catch(e){return null}}
+async function makeChildren(parent,list){
+  var made=[];
+  for(var i=0;i<list.length&&i<8;i++){
+    var x=list[i]||{},k=TEAMKEYS.indexOf(x.emp)>=0?x.emp:'';if(!k||!String(x.title||'').trim())continue;
+    var d=Math.max(0,Math.min(30,parseInt(x.start_in_days,10)||0));
+    var c={title:String(x.title).trim().slice(0,140),brief:'ضمن هدف: '+parent.title+'\n\n'+String(x.brief||'').trim(),emp:k,priority:x.priority==='high'?'high':'normal',
+      due:addDays(d),dueTime:d?'08:00':'00:00',auto:true,status:'new',createdAt:now(),updatedAt:now(),output:'',attachments:[],revisions:0,parent:parent.id,by:'lead'};
+    c.prompt=buildTaskPrompt(c,'');c.empName=EMP[k].n;
+    var ref=db.collection('tasks').doc();
+    try{await ref.set(c);made.push(Object.assign({id:ref.id},c))}catch(e){console.error(e)}
+  }
+  return made;
+}
+function planText(summary,made){
+  return '## الخطة\n'+(summary||'')+'\n\n## التوزيع\n'+made.map(function(c){return '- **'+EMP[c.emp].n+'**: '+c.title+' (يبدأ '+(c.due===todayStr?'اليوم':dueLabel(c.due))+')'}).join('\n')+
+    '\n\n## المتابعة\n- أراجع كل تسليم قبل ما يوصلك، وأرجّعه للتعديل إذا احتاج.\n- أنبّهك إذا تأخرت أي مهمة، وأبلغك لما يكتمل الهدف.';
+}
+async function runLead(id,note,fb){
+  var t=getTask(id,fb);if(!t||state.running[id])return;
+  if(!sample){toast('تشغيل الموظفين غير متاح في هذا العرض');return}
+  var ctl=new AbortController(),prev=t.output?'review':'new';
+  state.running[id]={text:'',ctl:ctl};state.err[id]='';render();
+  await patch(id,{status:'doing'});
+  try{
+    var r=await sample(buildLeadPrompt(t,note),{signal:ctl.signal,cache:false,onText:function(u){
+      if(state.running[id])state.running[id].text='فيصل يقسّم الهدف على الفريق…';
+      var el=document.getElementById('live-'+id);if(el)el.textContent='فيصل يقسّم الهدف على الفريق…';
+    }});
+    var plan=readJSON(r.text);
+    if(!plan||!plan.tasks||!plan.tasks.length){state.err[id]='ما قدر فيصل يطلع بتوزيع واضح. أعيدي المحاولة أو وزّعي الهدف يدوياً.';await patch(id,{status:prev});return}
+    if(note)childrenOf(id).filter(function(c){return c.status==='new'}).forEach(function(c){db.doc('tasks/'+c.id).delete().catch(function(){})});
+    var made=await makeChildren(t,plan.tasks);
+    await patch(id,{output:planText(plan.summary,made),status:'review',revisions:(t.revisions||0)+(note?1:0),lastRunAt:now(),goalDone:false});
+    addAlert('task_ready',id,'فيصل وزّع «'+t.title+'» على '+n(made.length)+' مهام');
+  }catch(e){
+    if(e&&e.code!=='cancelled')state.err[id]=sampleErr(e&&e.code);
+    await patch(id,{status:prev});
+  }finally{delete state.running[id];render()}
+}
+/* Faisal checks a team member's delivery before it reaches the manager; one round of changes at most */
+async function leadReview(id,text){
+  var t=getTask(id);if(!t)return;
+  var e=EMP[t.emp]||{n:''},parent=getTask(t.parent);
+  try{
+    var r=await sample(['أنت فيصل، مدير الفريق في المكتب التسويقي لمنصة شحنات. راجع تسليم '+e.n+' ('+e.role+') قبل ما يوصل للمديرة.',
+      companyBlock(),parent?'الهدف العام: '+parent.title:'','المهمة: '+t.title+'\nالتفاصيل: '+(t.brief||''),'التسليم:\n'+String(text||'').slice(0,12000),
+      'قيّم: هل ينفذ المطلوب كاملاً، دقيق، بدون أرقام مخترعة، جاهز للاستخدام، ومناسب لهوية شحنات؟',
+      'رد بصيغة JSON فقط: {"ok":true|false,"note":"ملاحظتك في سطرين إلى أربعة: إذا ok اذكر أهم ما يميز التسليم وأي شي تنتبه له المديرة، وإذا لا اكتب للموظف بالضبط وش يعدّل"}'].filter(Boolean).join('\n\n'),{cache:false});
+    var v=readJSON(r.text)||{ok:true,note:''};
+    if(!v.ok&&(t.revisions||0)<1){
+      await patch(id,{leadNote:String(v.note||''),leadOk:false});
+      return runTask(id,'ملاحظة فيصل (مدير الفريق): '+(v.note||'حسّن التسليم ليكون أكمل وأدق.'));
+    }
+    await patch(id,{leadNote:String(v.note||''),leadOk:!!v.ok});
+    addAlert('task_ready',id,'فيصل راجع تسليم '+e.n+': '+t.title+(v.ok?' (جاهز لمراجعتك)':' (يحتاج نظرتك)'));
+  }catch(err){addAlert('task_ready',id,e.n+' سلّم: '+t.title)}
+}
+/* follow-up without the AI: late work, finished goals, the morning summary (office manager's page only) */
+function leadWatch(){
+  state.tasks.forEach(function(t){
+    if(t.emp!=='lead'&&(t.status==='new'||t.status==='doing')&&isLate(t)&&!t.lateAlerted){
+      patch(t.id,{lateAlerted:true});addAlert('lead_late',t.id,'فيصل: «'+t.title+'» عند '+(EMP[t.emp]||{n:''}).n+' تأخرت عن موعدها');
+    }
+    if(t.emp==='lead'&&!t.parent&&!t.goalDone){
+      var ch=childrenOf(t.id);
+      if(ch.length&&ch.every(function(c){return c.status==='done'})){patch(t.id,{goalDone:true});addAlert('task_ready',t.id,'فيصل: اكتملت كل مهام «'+t.title+'»، تقدرين تعتمدين الهدف')}
+    }
+  });
+  var key='lead-daily-'+todayStr,h=new Date().getHours();
+  try{if(h>=8&&!localStorage.getItem(key)&&state.tasks.length){
+    localStorage.setItem(key,'1');
+    var T=state.tasks.filter(function(t){return t.emp!=='lead'});
+    var rv=T.filter(function(t){return t.status==='review'}).length,dg=T.filter(function(t){return t.status==='doing'}).length,
+        lt=T.filter(function(t){return (t.status==='new'||t.status==='doing')&&isLate(t)}).length,nw=T.filter(function(t){return t.status==='new'}).length;
+    addAlert('lead_daily','','فيصل: ملخص اليوم: '+n(rv)+' بانتظار مراجعتك، '+n(dg)+' قيد التنفيذ، '+n(nw)+' جديدة'+(lt?'، و'+n(lt)+' متأخرة':'، وما فيه متأخر'));
+  }}catch(e){}
+}
+async function manualSplit(id){
+  var t=getTask(id);if(!t)return;
+  var ks=Array.prototype.slice.call(document.querySelectorAll('.ld-emp:checked')).map(function(x){return x.value});
+  if(!ks.length){toast('اختاري موظف واحد على الأقل');return}
+  var made=await makeChildren(t,ks.map(function(k){return {emp:k,title:t.title+' ('+EMP[k].room+')',brief:'المطلوب منك في هذا الهدف حسب تخصصك:\n'+(t.brief||t.title),start_in_days:0,priority:t.priority}}));
+  await patch(id,{output:planText('توزيع يدوي من المديرة.',made),status:'review',goalDone:false});
+  toast('انوزّع الهدف على '+n(made.length)+' موظفين');
+}
+function leadBoard(){
+  var rows=TEAMKEYS.map(function(k){
+    var l=empTasks(k),c=function(f){return l.filter(f).length};
+    return '<div class="ld-row"><b>'+esc(EMP[k].n)+'</b><span>'+n(c(function(t){return t.status==='new'}))+'</span><span>'+n(c(function(t){return t.status==='doing'}))+'</span><span>'+n(c(function(t){return t.status==='review'}))+'</span><span class="'+(c(function(t){return (t.status==='new'||t.status==='doing')&&isLate(t)})?'late':'')+'">'+n(c(function(t){return (t.status==='new'||t.status==='doing')&&isLate(t)}))+'</span></div>';
+  }).join('');
+  var goals=empTasks('lead').filter(function(t){return !t.parent&&t.status!=='done'}).map(function(g){
+    var ch=childrenOf(g.id),d=ch.filter(function(c){return c.status==='done'}).length,pct=ch.length?Math.round(d*100/ch.length):0;
+    return '<button type="button" class="fitem" data-act="task" data-id="'+esc(g.id)+'"><span>'+esc(g.title)+'</span><small>'+(ch.length?n(d)+' من '+n(ch.length)+' · '+pct+'%':'لم يتوزع بعد')+'</small></button>';
+  }).join('');
+  return '<div class="block"><h3>لوحة المتابعة</h3><div class="ld-board"><div class="ld-row th"><b>الموظف</b><span>جديدة</span><span>قيد التنفيذ</span><span>للمراجعة</span><span>متأخرة</span></div>'+rows+'</div></div>'+
+    (goals?'<div class="block"><h3>الأهداف الجارية</h3><div class="focus" style="background:none;padding:0">'+goals+'</div></div>':'');
+}
+function leadTaskBlock(t){
+  var ch=childrenOf(t.id),h='';
+  if(ch.length){
+    var d=ch.filter(function(c){return c.status==='done'}).length,pct=Math.round(d*100/ch.length);
+    h+='<div class="block"><h3>متابعة فيصل</h3><div class="prog" style="margin:0 0 10px"><span>'+n(d)+' من '+n(ch.length)+' مهام اكتملت</span><div class="bar"><i style="width:'+pct+'%"></i></div></div><div class="tasks">'+sortTasks(ch).map(taskRow).join('')+'</div></div>';
+  }else if(t.status==='new'||t.status==='doing'){
+    h+='<div class="block"><h3>أو وزّعيه يدوياً</h3><p class="muted" style="margin:0 0 8px">يتحول الهدف لمهمة عند كل موظف تختارينه، ويبدأون اليوم.</p><div class="ld-pick">'+
+      TEAMKEYS.map(function(k){return '<label class="check"><input type="checkbox" class="ld-emp" value="'+k+'"><span>'+esc(EMP[k].n+' · '+EMP[k].room)+'</span></label>'}).join('')+
+      '</div><button class="btn wide" type="button" data-act="leadsplit" data-id="'+esc(t.id)+'">وزّعي</button></div>';
+  }
+  return h;
 }
 async function createTask(){
   var v=function(i){var el=document.getElementById(i);return el?el.value:''};
@@ -772,6 +917,7 @@ async function createTask(){
   var go=!!(document.getElementById('nt-go')&&document.getElementById('nt-go').checked&&sample);
   var data={title:title,brief:v('nt-brief').trim(),emp:v('nt-emp'),priority:v('nt-prio')==='high'?'high':'normal',due:v('nt-due')||'',dueTime:v('nt-time')||'08:00',auto:!go&&!!v('nt-due'),
     status:'new',createdAt:now(),updatedAt:now(),output:'',attachments:[],revisions:0};
+  if(data.emp==='lead')data.auto=false;
   if(data.auto){data.prompt=buildTaskPrompt(data,'');data.empName=(EMP[data.emp]||{}).n||''}
   var ref=db.collection('tasks').doc();
   try{await ref.set(data)}catch(e){console.error(e);toast('تعذر حفظ المهمة');return}
@@ -847,6 +993,7 @@ var H={
  },
  create:function(){createTask()},
  start:function(el){runTask(el.dataset.id)},
+ leadsplit:function(el){manualSplit(el.dataset.id)},
  stop:function(el){var r=state.running[el.dataset.id];if(r&&r.ctl)r.ctl.abort()},
  approve:function(el){patch(el.dataset.id,{status:'done',doneAt:now()}).then(function(){toast('اعتُمد التسليم')})},
  reopen:function(el){patch(el.dataset.id,{status:'review',doneAt:''})},
@@ -898,7 +1045,7 @@ var H={
   alertopen:function(el){
     var a=state.alerts.filter(function(x){return x.id===el.dataset.id})[0];if(!a)return;
     if(!a.read)db.doc('alerts/'+a.id).update({read:true}).catch(function(){});
-    if(a.type==='task_ready'&&getTask(a.ref)){state.sheet={type:'task',id:a.ref}}else if(a.type==='security'){state.sheet=null}else if(a.type==='lead'){state.sheet=null;state.view='crm';location.hash='crm';var rid=a.ref;setTimeout(function(){document.dispatchEvent(new CustomEvent('crm:open',{detail:rid}))},300)}else{state.sheet=null;state.view='meeting';if(a.type==='minutes'&&a.ref)state.meet.sel=a.ref;location.hash='meeting'}
+    if((a.type==='task_ready'||a.type==='lead_late')&&getTask(a.ref)){state.sheet={type:'task',id:a.ref}}else if(a.type==='lead_daily'){state.sheet={type:'room',k:'lead'}}else if(a.type==='security'){state.sheet=null}else if(a.type==='lead'){state.sheet=null;state.view='crm';location.hash='crm';var rid=a.ref;setTimeout(function(){document.dispatchEvent(new CustomEvent('crm:open',{detail:rid}))},300)}else{state.sheet=null;state.view='meeting';if(a.type==='minutes'&&a.ref)state.meet.sel=a.ref;location.hash='meeting'}
     render();
   },
   alertsread:function(){state.alerts.forEach(function(a){if(!a.read)db.doc('alerts/'+a.id).update({read:true}).catch(function(){})})},
