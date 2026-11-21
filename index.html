@@ -253,6 +253,8 @@ nav.bar button[aria-current="page"]{color:var(--accent-text);font-weight:800;bac
 .ld-row{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(4,minmax(0,1fr));gap:6px;padding:9px 0;border-top:1px solid var(--line);font-size:14.5px;align-items:center}
 .ld-row:first-child{border-top:0}.ld-row span{text-align:center;font-variant-numeric:tabular-nums}.ld-row.th{color:var(--muted);font-size:12.5px}.ld-row .late{color:var(--bad);font-weight:700}
 .ld-pick{display:grid;gap:6px;margin-bottom:10px}
+.ld-goals{display:grid;gap:8px}.ld-goal{position:relative;overflow:hidden;display:flex;justify-content:space-between;gap:10px;width:100%;text-align:start;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:11px 12px 14px;font:inherit;color:var(--ink);cursor:pointer}
+.ld-goal small{flex:none;color:var(--muted);font-size:13px}.ld-goal i{position:absolute;bottom:0;right:0;height:4px;background:var(--bright)}
 #sheet .prog span{font-size:14px;color:var(--muted)}#sheet .prog .bar{height:8px;background:var(--soft);border-radius:4px;margin-top:6px}#sheet .prog .bar i{background:var(--bright)}
 .linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--accent-text);text-decoration:underline;cursor:pointer}
 </style>
@@ -610,7 +612,7 @@ function sheetRoom(k){
   var h=shead('غرفة '+n(EMPS.indexOf(e)+1)+' · '+e.room)+'<div class="who"><div class="av" aria-hidden="true">'+esc(e.n.charAt(0))+'</div><div><h2>'+esc(e.n)+'</h2><p>'+esc(e.role)+'</p></div></div>';
   h+='<p class="muted" style="margin:0">'+esc(e.duties)+'</p>';
   h+='<div class="block"><button class="btn pri wide" type="button" data-act="newtask" data-k="'+k+'">'+(k==='lead'?'أعطي فيصل هدف يوزّعه':'كلّفي '+esc(e.n)+' بمهمة')+'</button></div>';
-  if(k==='lead')h+=leadBoard();
+  if(k==='lead'){h+=leadBoard();h+=leadCfgBlock();}
   h+='<div class="block"><h3>مهام '+esc(e.n)+'</h3>'+(l.length?'<div class="tasks">'+l.map(taskRow).join('')+'</div>':'<div class="empty">ما في مهام لهذه الغرفة بعد.</div>')+'</div>';
   h+='<div class="block"><h3>توجيهاتك الدائمة</h3><p class="muted" style="margin:0">تُضاف هنا لما تحفظين ملاحظة تعديل كتوجيه دائم، ويلتزم بها '+esc(e.n)+' في كل مهمة جاية.</p>';
   h+=ls.length?'<div class="lessons">'+ls.map(function(x,i){return '<div class="lesson"><span>'+esc(x)+'</span><button class="btn danger" type="button" data-act="dellesson" data-k="'+k+'" data-i="'+i+'">حذف</button></div>'}).join('')+'</div>':'<div class="empty">ما في توجيهات بعد.</div>';
@@ -645,9 +647,10 @@ function sheetTask(id){
   h+='<div style="margin-top:8px"><span class="pill p-'+esc(t.status)+'">'+esc(STATUS[t.status]||t.status)+'</span></div><h2 style="font:700 24px/1.35 var(--display);margin:10px 0 8px">'+esc(t.title)+'</h2>';
   h+='<div class="meta"><span>'+esc(e.n)+' · '+esc(e.role)+'</span>'+(t.due?'<span class="'+(isLate(t)?'late':'')+'">الموعد: '+esc(dueLabel(t.due))+(t.dueTime?' · '+esc(t.dueTime):'')+(isLate(t)?' (متأخرة)':'')+'</span>':'')+(t.priority==='high'?'<span class="hot">عاجلة</span>':'')+'</div>';
   if(t.brief)h+='<div class="block"><h3>التفاصيل</h3><div class="paper brief">'+esc(t.brief)+'</div></div>';
-  if(t.parent&&getTask(t.parent))h+='<p class="muted" style="margin:10px 0 0">ضمن هدف وزّعه فيصل: <button type="button" class="linkbtn" data-act="task" data-id="'+esc(t.parent)+'">'+esc(getTask(t.parent).title)+'</button></p>';
+  if(t.parent&&t.kind!=='report'&&getTask(t.parent))h+='<p class="muted" style="margin:10px 0 0">ضمن هدف وزّعه فيصل: <button type="button" class="linkbtn" data-act="task" data-id="'+esc(t.parent)+'">'+esc(getTask(t.parent).title)+'</button></p>';
   if(t.leadNote&&t.status==='review')h+='<div class="block"><h3>ملاحظة فيصل</h3><div class="paper">'+esc(t.leadNote)+'</div></div>';
   if(t.emp==='lead'&&!t.parent)h+=leadTaskBlock(t);
+  if(t.kind==='report'&&getTask(t.parent))h+='<p class="muted" style="margin:10px 0 0">تقرير عن: <button type="button" class="linkbtn" data-act="task" data-id="'+esc(t.parent)+'">'+esc(getTask(t.parent).title)+'</button></p>';
   /* execution */
   if(run){
     h+='<div class="block"><h3>'+esc(e.n)+' يكتب التسليم…</h3><div class="paper md typing" id="live-'+esc(id)+'">'+(run.text?md(run.text):'يفكر في المهمة…')+'</div><div class="actions"><button class="btn" type="button" data-act="stop" data-id="'+esc(id)+'">إيقاف</button></div></div>';
@@ -789,7 +792,8 @@ async function runTask(id,note,fb){
 /* ---------- Faisal, the team lead ---------- */
 var TEAMKEYS=['seo','social','content','growth','analytics'];
 function addDays(n){var d=new Date();d.setDate(d.getDate()+n);return ymd(d)}
-function childrenOf(id){return state.tasks.filter(function(x){return x.parent===id})}
+function childrenOf(id){return state.tasks.filter(function(x){return x.parent===id&&x.kind!=='report'})}
+function reportOf(id){return state.tasks.filter(function(x){return x.parent===id&&x.kind==='report'})[0]}
 function buildLeadPrompt(t,note){
   var team=TEAMKEYS.map(function(k){var e=EMP[k];return '- '+k+': '+e.n+'، '+e.role+'. '+e.duties}).join('\n');
   return ['أنت فيصل، مدير الفريق في المكتب التسويقي لمنصة شحنات. مديرة التسويق تعطيك هدفاً، وأنت تقسّمه مهام واضحة على الفريق.',
@@ -860,13 +864,10 @@ async function leadReview(id,text){
 }
 /* follow-up without the AI: late work, finished goals, the morning summary (office manager's page only) */
 function leadWatch(){
+  leadWeekly();
   state.tasks.forEach(function(t){
     if(t.emp!=='lead'&&(t.status==='new'||t.status==='doing')&&isLate(t)&&!t.lateAlerted){
       patch(t.id,{lateAlerted:true});addAlert('lead_late',t.id,'فيصل: «'+t.title+'» عند '+(EMP[t.emp]||{n:''}).n+' تأخرت عن موعدها');
-    }
-    if(t.emp==='lead'&&!t.parent&&!t.goalDone){
-      var ch=childrenOf(t.id);
-      if(ch.length&&ch.every(function(c){return c.status==='done'})){patch(t.id,{goalDone:true});addAlert('task_ready',t.id,'فيصل: اكتملت كل مهام «'+t.title+'»، تقدرين تعتمدين الهدف')}
     }
   });
   var key='lead-daily-'+todayStr,h=new Date().getHours();
@@ -877,6 +878,81 @@ function leadWatch(){
         lt=T.filter(function(t){return (t.status==='new'||t.status==='doing')&&isLate(t)}).length,nw=T.filter(function(t){return t.status==='new'}).length;
     addAlert('lead_daily','','فيصل: ملخص اليوم: '+n(rv)+' بانتظار مراجعتك، '+n(dg)+' قيد التنفيذ، '+n(nw)+' جديدة'+(lt?'، و'+n(lt)+' متأخرة':'، وما فيه متأخر'));
   }}catch(e){}
+}
+
+/* weekly plan + reports */
+var DAYS=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس'];
+function weekKey(){return ymd(weekStart)}
+function weekLabel(){var e=new Date(weekStart);e.setDate(e.getDate()+4);return fmtShort(ymd(weekStart))+' إلى '+fmtShort(ymd(e))}
+function weeklyBrief(cfg){
+  var prev=state.tasks.filter(function(t){return t.kind==='report'}).sort(function(a,b){return (a.createdAt||'')<(b.createdAt||'')?1:-1})[0];
+  var open=state.tasks.filter(function(t){return t.emp!=='lead'&&(t.status==='new'||t.status==='doing')});
+  return ['خطة عمل الفريق لهذا الأسبوع ('+weekLabel()+').',
+    cfg.priorities?'أولويات المديرة الثابتة:\n'+cfg.priorities:'',
+    open.length?'مهام مفتوحة من قبل (لا تكررها، وخذها في الحسبان):\n'+open.slice(0,15).map(function(t){return '- '+(EMP[t.emp]||{n:''}).n+': '+t.title}).join('\n'):'',
+    prev?'ملخص تقرير الأسبوع الماضي:\n'+String(prev.output||'').slice(0,2500):'',
+    'وزّع العمل على أيام الأسبوع من الأحد للخميس، وخلّ كل موظف عنده مهمة إلى مهمتين على الأكثر.'].filter(Boolean).join('\n\n');
+}
+async function makeWeekly(cfg){
+  var data={title:'خطة الأسبوع: '+weekLabel(),brief:weeklyBrief(cfg),emp:'lead',priority:'normal',due:'',dueTime:'08:00',auto:false,
+    status:'new',createdAt:now(),updatedAt:now(),output:'',attachments:[],revisions:0,kind:'weekly',week:weekKey()};
+  var ref=db.collection('tasks').doc();
+  try{await ref.set(data)}catch(e){console.error(e);return}
+  addAlert('task_ready',ref.id,'فيصل جهّز «'+data.title+'» ويوزّعها على الفريق');
+  if(sample)setTimeout(function(){runLead(ref.id,'',Object.assign({id:ref.id},data))},1500);
+}
+function cut(s,n){s=String(s||'').replace(/[#*>`|]/g,'').replace(/\s+/g,' ').trim();return s.length>n?s.slice(0,n)+'…':s}
+async function makeReport(g){
+  var ch=childrenOf(g.id),done=ch.filter(function(c){return c.status==='done'}),rev=ch.filter(function(c){return c.status==='review'}),
+      open=ch.filter(function(c){return c.status==='new'||c.status==='doing'}),pct=ch.length?Math.round(done.length*100/ch.length):0;
+  var ST={done:'تم واعتمدتيه',review:'سلّم وبانتظار مراجعتك','new':'لم يبدأ',doing:'قيد التنفيذ'};
+  var by={};ch.forEach(function(c){(by[c.emp]=by[c.emp]||[]).push(c)});
+  var md='## الخلاصة\n- '+n(done.length)+' من '+n(ch.length)+' مهام اكتملت ('+pct+'%).\n- '+n(rev.length)+' بانتظار مراجعتك، و'+n(open.length)+' لم تكتمل.\n\n## مهام كل موظف\n'+
+    Object.keys(by).map(function(k){return '### '+(EMP[k]||{n:k}).n+'\n'+by[k].map(function(c){
+      return '- **'+c.title+'**: '+ST[c.status]+(c.output&&c.status!=='new'?'\n  - '+cut(c.output,160):'');
+    }).join('\n')}).join('\n\n');
+  if(rev.length)md+='\n\n## يحتاج قرارك\n'+rev.map(function(c){return '- '+c.title+' ('+(EMP[c.emp]||{n:''}).n+')'}).join('\n');
+  if(open.length)md+='\n\n## ما اكتمل\n'+open.map(function(c){return '- '+c.title+' ('+(EMP[c.emp]||{n:''}).n+'، '+ST[c.status]+')'}).join('\n');
+  if(sample){try{
+    var r=await sample(['أنت فيصل، مدير الفريق في المكتب التسويقي لمنصة شحنات. اكتب للمديرة قراءتك لنتيجة '+(g.kind==='weekly'?'الأسبوع':'الهدف')+' في 3 إلى 5 نقاط قصيرة: أهم ما انجز، الفجوات، واقتراح واحد أو اثنين للأسبوع الجاي. بدون مقدمات، نقاط فقط، ولا تخترع أرقام.',
+      companyBlock(),'الهدف: '+g.title,md.slice(0,8000)].filter(Boolean).join('\n\n'),{cache:false});
+    if(r&&r.text)md='## قراءة فيصل\n'+r.text.trim()+'\n\n'+md;
+  }catch(e){}}
+  var data={title:'تقرير فيصل: '+g.title.replace(/^خطة الأسبوع: /,'أسبوع '),brief:'',emp:'lead',priority:'normal',due:'',dueTime:'',auto:false,
+    status:'review',createdAt:now(),updatedAt:now(),output:md,attachments:[],revisions:0,kind:'report',parent:g.id};
+  var ref=db.collection('tasks').doc();
+  try{await ref.set(data)}catch(e){console.error(e);return}
+  addAlert('task_ready',ref.id,'فيصل رفع تقريره عن «'+g.title+'»: '+n(done.length)+' من '+n(ch.length)+' مهام اكتملت');
+}
+var leadBusy=false;
+async function leadWeekly(){
+  if(leadBusy||!state.ready.l)return;leadBusy=true;
+  try{
+    var cfg=state.leadCfg||{},d=new Date(),h=d.getHours(),day=d.getDay();
+    /* new plan: on the chosen day or later in the week, from 8 in the morning, once a week */
+    if(cfg.weekly&&day<=4&&day>=(+cfg.day||0)&&h>=8&&!state.tasks.some(function(t){return t.kind==='weekly'&&t.week===weekKey()}))await makeWeekly(cfg);
+    /* reports: a goal whose tasks are all approved, or a weekly plan on Thursday afternoon / after its week */
+    var goals=state.tasks.filter(function(t){return t.emp==='lead'&&!t.parent&&(t.kind==='weekly'||t.kind===undefined||t.kind==='goal')&&!t.reported});
+    for(var i=0;i<goals.length;i++){
+      var g=goals[i],ch=childrenOf(g.id);if(!ch.length)continue;
+      var all=ch.every(function(c){return c.status==='done'});
+      var wkEnd=g.kind==='weekly'&&(g.week<weekKey()||(g.week===weekKey()&&day===4&&h>=16));
+      if(all||wkEnd){await patch(g.id,{reported:true,goalDone:all});await makeReport(g)}
+    }
+  }finally{leadBusy=false}
+}
+async function saveLeadCfg(){
+  var v=function(i){var el=document.getElementById(i);return el?el.value:''};
+  var cfg={weekly:!!(document.getElementById('lc-on')||{}).checked,day:+v('lc-day')||0,priorities:v('lc-pri').trim(),updatedAt:now()};
+  try{await db.doc('config/lead').set(cfg);toast(cfg.weekly?'فيصل بيجهّز خطة كل أسبوع يوم '+DAYS[cfg.day]:'انحفظت الإعدادات')}catch(e){toast('تعذر الحفظ')}
+}
+function leadCfgBlock(){
+  var c=state.leadCfg||{};
+  return '<div class="block"><h3>الخطة الأسبوعية</h3><p class="muted" style="margin:0 0 8px">فيصل يجهّز خطة الأسبوع ويوزّعها على الفريق تلقائياً، ويرفع لك تقرير لما يخلصون أو يوم الخميس العصر.</p><div class="form">'+
+    '<label class="check" for="lc-on"><input id="lc-on" data-keep type="checkbox"'+(c.weekly?' checked':'')+'><span>شغّلي الخطة الأسبوعية التلقائية</span></label>'+
+    '<label for="lc-day">يوم تجهيز الخطة<select id="lc-day" data-keep>'+DAYS.map(function(d,i){return '<option value="'+i+'"'+((+c.day||0)===i?' selected':'')+'>'+d+' الساعة 8 الصبح</option>'}).join('')+'</select></label>'+
+    '<label for="lc-pri">أولوياتنا الثابتة (يرجع لها فيصل كل أسبوع)<textarea id="lc-pri" data-keep placeholder="مثال: نركّز هالشهر على المتاجر الإلكترونية في الرياض وجدة، ونبي محتوى يشرح ميزة إن خدمة العملاء تنشئ الشحنة عن العميل.">'+esc(c.priorities||'')+'</textarea></label>'+
+    '<button class="btn wide" type="button" data-act="leadcfg">حفظ</button></div></div>';
 }
 async function manualSplit(id){
   var t=getTask(id);if(!t)return;
@@ -891,12 +967,14 @@ function leadBoard(){
     var l=empTasks(k),c=function(f){return l.filter(f).length};
     return '<div class="ld-row"><b>'+esc(EMP[k].n)+'</b><span>'+n(c(function(t){return t.status==='new'}))+'</span><span>'+n(c(function(t){return t.status==='doing'}))+'</span><span>'+n(c(function(t){return t.status==='review'}))+'</span><span class="'+(c(function(t){return (t.status==='new'||t.status==='doing')&&isLate(t)})?'late':'')+'">'+n(c(function(t){return (t.status==='new'||t.status==='doing')&&isLate(t)}))+'</span></div>';
   }).join('');
+  var reps=empTasks('lead').filter(function(t){return t.kind==='report'}).sort(function(a,b){return (a.createdAt||'')<(b.createdAt||'')?1:-1}).slice(0,5);
   var goals=empTasks('lead').filter(function(t){return !t.parent&&t.status!=='done'}).map(function(g){
     var ch=childrenOf(g.id),d=ch.filter(function(c){return c.status==='done'}).length,pct=ch.length?Math.round(d*100/ch.length):0;
-    return '<button type="button" class="fitem" data-act="task" data-id="'+esc(g.id)+'"><span>'+esc(g.title)+'</span><small>'+(ch.length?n(d)+' من '+n(ch.length)+' · '+pct+'%':'لم يتوزع بعد')+'</small></button>';
+    return '<button type="button" class="ld-goal" data-act="task" data-id="'+esc(g.id)+'"><span>'+esc(g.title)+'</span><small>'+(ch.length?n(d)+' من '+n(ch.length)+' · '+pct+'%':'لم يتوزع بعد')+'</small><i style="width:'+pct+'%"></i></button>';
   }).join('');
   return '<div class="block"><h3>لوحة المتابعة</h3><div class="ld-board"><div class="ld-row th"><b>الموظف</b><span>جديدة</span><span>قيد التنفيذ</span><span>للمراجعة</span><span>متأخرة</span></div>'+rows+'</div></div>'+
-    (goals?'<div class="block"><h3>الأهداف الجارية</h3><div class="focus" style="background:none;padding:0">'+goals+'</div></div>':'');
+    (goals?'<div class="block"><h3>الأهداف الجارية</h3><div class="ld-goals">'+goals+'</div></div>':'')+
+    (reps.length?'<div class="block"><h3>تقارير فيصل</h3><div class="tasks">'+reps.map(taskRow).join('')+'</div></div>':'');
 }
 function leadTaskBlock(t){
   var ch=childrenOf(t.id),h='';
@@ -994,6 +1072,7 @@ var H={
  create:function(){createTask()},
  start:function(el){runTask(el.dataset.id)},
  leadsplit:function(el){manualSplit(el.dataset.id)},
+ leadcfg:function(){saveLeadCfg()},
  stop:function(el){var r=state.running[el.dataset.id];if(r&&r.ctl)r.ctl.abort()},
  approve:function(el){patch(el.dataset.id,{status:'done',doneAt:now()}).then(function(){toast('اعتُمد التسليم')})},
  reopen:function(el){patch(el.dataset.id,{status:'review',doneAt:''})},
@@ -1152,6 +1231,7 @@ render();
   db.doc('config/company').onSnapshot(function(d){
     state.company=d.exists?String((d.data()||{}).text||''):'';state.ready.c=true;render();
   },fail);
+  if(state.mgr)db.doc('config/lead').onSnapshot(function(d){state.leadCfg=d.exists?(d.data()||{}):{};state.ready.l=true;render()},function(){state.ready.l=true});
   setInterval(autoRun,60000);setTimeout(autoRun,2500);
 })();
 })();
